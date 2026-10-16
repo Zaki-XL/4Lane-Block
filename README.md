@@ -44,14 +44,59 @@ graph LR
 
 ---
 
+## 遊び方・起動方法
+
+### ローカル環境での起動
+Windows 環境では、プロジェクト直下の `start.bat` をダブルクリックするだけで、ローカルHTTPサーバーが立ち上がり、ブラウザが自動的に開きます。
+
+```cmd
+start.bat
+```
+
+またはターミナルから以下のコマンドを実行してください：
+```powershell
+python -m http.server 8000
+# ブラウザで http://localhost:8000 を開く
+```
+
+### 操作方法
+- **クリック / タップ**: レーンをクリックして最上部ブロックを持ち上げ、移動先レーンをクリックして配置。
+- **ドラッグ＆ドロップ**: ブロックを直接掴んで目的のレーンへドロップ。
+- **キーボード**:
+  - `[1]` 〜 `[4]` キー: レーン直接指定
+  - `[←]` / `[→]` キー: レーンのフォーカス移動
+  - `[Enter]` / `[Space]` キー: 持ち上げ / 配置の決定
+  - `[Esc]` キー: 持ち上げキャンセル
+
+---
+
 ## ディレクトリ構成
 
 ```text
 4Lane Block/
+├── index.html                 # ゲームメイン画面 (HTMLエントリー)
+├── start.bat                  # ローカル起動用バッチ (Shift-JIS)
 ├── README.md                  # プロジェクト概要・本ドキュメント
+├── src/
+│   ├── main.js                # アプリケーション初期化・結合
+│   ├── style.css              # モダンUIスタイルシート
+│   ├── core/                  # コアゲームロジック (UI非依存)
+│   │   ├── types.js           # データ型・定数定義
+│   │   ├── prng.js            # 決定論的乱数 (Mulberry32)・ソルト生成
+│   │   ├── timer.js           # 高精度カウントアップタイマー
+│   │   └── game_engine.js     # コアAPI (スタック、高さ制限、クリア判定)
+│   ├── controllers/           # 入力抽象化ラッパー層
+│   │   ├── click_controller.js      # クリック/タップ操作
+│   │   ├── drag_drop_controller.js  # ドラッグ＆ドロップ操作
+│   │   └── keyboard_controller.js   # キーボード操作
+│   └── ui/                    # プレゼンテーション層
+│       ├── renderer.js        # 盤面・ブロックスタック描画
+│       ├── timer_view.js      # タイマー・手数・ソルト操作パネル
+│       └── modal.js           # ゲームクリアリザルトモーダル
 └── doc/
     ├── game_specification.md  # 詳細ゲーム仕様書
-    └── architecture.md        # システム・アーキテクチャ設計書
+    ├── architecture.md        # システム・アーキテクチャ設計書
+    └── reviewer_report.md     # 品質・セキュリティ検証結果レビュー報告書
 ```
 
 ---
@@ -67,4 +112,7 @@ graph LR
   - 無料ホスティング（GitHub Pages等）公開構成
   - 操作APIインターフェース定義と入力ラッパー層設計
   - 決定論的PRNG（Mulberry32）によるソルト盤面再現アルゴリズム
+- [品質・セキュリティ検証結果レビュー報告書 (doc/reviewer_report.md)](file:///e:/Project/00-Game/4Lane%20Block/doc/reviewer_report.md)
+  - 全モジュール構文検査・コアユニットテスト結果
+  - E2E手動・自動検証およびコンソールエラー監査結果
 

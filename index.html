@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>4Lane Block - 4レーン・ブロックソートパズル</title>
+  <link rel="stylesheet" href="./src/style.css">
+</head>
+<body>
+  <div class="app-container">
+    <header class="header">
+      <h1 class="title">4Lane Block</h1>
+      <p class="subtitle">3色のブロックを各レーンに仕分ける思考型ソートパズル</p>
+    </header>
+
+    <!-- コントロール・ステータスパネル -->
+    <section id="controls" class="control-container" aria-label="ゲーム操作パネル"></section>
+
+    <!-- 4レーン盤面 -->
+    <main id="board" class="board-container" aria-label="パズル盤面"></main>
+
+    <!-- 操作説明 -->
+    <footer class="instructions-panel">
+      <h4>💡 操作方法 (マルチデバイス対応)</h4>
+      <ul>
+        <li><strong>クリック / タップ:</strong> レーンをクリックしてブロックを持ち上げ、別のレーンをクリックして配置</li>
+        <li><strong>ドラッグ＆ドロップ:</strong> 最上部のブロックを目的のレーンへ直接ドラッグ</li>
+        <li><strong>キーボード:</strong> <span class="key-badge">1</span>〜<span class="key-badge">4</span> で直接レーン指定、または <span class="key-badge">←</span><span class="key-badge">→</span> で移動し <span class="key-badge">Enter</span> / <span class="key-badge">Space</span> で決定、<span class="key-badge">Esc</span> でキャンセル</li>
+      </ul>
+    </footer>
+  </div>
+
+  <!-- クリアモーダル表示コンテナ -->
+  <div id="modal-container"></div>
+
+  <!-- ES Modules メインスクリプト -->
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
