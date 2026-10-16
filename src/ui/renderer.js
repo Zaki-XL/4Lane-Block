@@ -13,6 +13,8 @@ export class BoardRenderer {
     this.container = containerElement;
     this.focusedLaneIndex = 0;
     this.currentHeightLimit = 10;
+    /** @type {string | null} */
+    this.lastDroppedBlockId = null;
 
     // ウィンドウリサイズ時に動的スケーリングを再計算
     this.handleResize = this.handleResize.bind(this);
@@ -140,6 +142,14 @@ export class BoardRenderer {
   }
 
   /**
+   * 落下アニメーション対象のブロックIDを設定
+   * @param {string | null} blockId
+   */
+  setDroppedBlock(blockId) {
+    this.lastDroppedBlockId = blockId;
+  }
+
+  /**
    * ブロック要素の作成
    * @private
    * @param {import('../core/types.js').Block} block
@@ -153,10 +163,24 @@ export class BoardRenderer {
     el.setAttribute('data-block-id', block.id);
     el.setAttribute('data-color', block.color);
 
+    // 新規着地ブロックに落下アニメーションを適用
+    if (this.lastDroppedBlockId === block.id) {
+      el.classList.add('block-dropping');
+      el.addEventListener('animationend', () => {
+        el.classList.remove('block-dropping');
+        if (this.lastDroppedBlockId === block.id) {
+          this.lastDroppedBlockId = null;
+        }
+      }, { once: true });
+    }
+
     const config = ColorConfig[block.color];
     if (config) {
       el.style.background = config.gradient;
-      el.style.boxShadow = `0 2px 8px ${config.glow}`;
+      // 最上位ブロックのみ美しい発光グローを付与
+      if (isTop) {
+        el.style.boxShadow = `0 3px 10px ${config.glow}`;
+      }
     }
 
     if (isTop) {

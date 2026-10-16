@@ -38,6 +38,11 @@ function initApp() {
   // 初回描画
   renderer.render(engine.getState());
 
+  // 移動成功時に落下アニメーション対象ブロックを設定
+  engine.on('moveSuccess', ({ block }) => {
+    renderer.setDroppedBlock(block.id);
+  });
+
   // 状態変化時の再描画購読
   engine.on('stateChange', (state) => {
     renderer.render(state);

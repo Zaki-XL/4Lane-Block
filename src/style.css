@@ -316,7 +316,7 @@ body {
   flex-shrink: 0;
 }
 
-/* ブロック */
+/* ブロック基本スタイル (デフォルトは下の固定ブロック) */
 .block {
   width: 100%;
   height: 100%;
@@ -328,36 +328,89 @@ body {
   font-size: clamp(8px, 1.6vh, 13px);
   color: #ffffff;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
-  cursor: grab;
-  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+  cursor: default;
+  transition: all 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
   position: relative;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   box-sizing: border-box;
+
+  /* 下位ブロックの沈静化表現 (操作不可であることを明確化) */
+  filter: brightness(0.68) saturate(0.8);
+  opacity: 0.88;
 }
 
-.block[draggable="true"]:hover {
-  transform: translateY(-2px);
-  filter: brightness(1.1);
+/* 各レーンの最上位ブロック (操作対象: 鮮やかに発光・強調) */
+.block[data-is-top="true"] {
+  cursor: grab;
+  filter: brightness(1.08) saturate(1.15);
+  opacity: 1;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-top: 2px solid rgba(255, 255, 255, 0.95); /* 上部光沢ハイライト */
 }
 
+/* 最上位ブロックの操作可能インジケーター (上部小さな光彩ドット) */
+.block[data-is-top="true"]::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  right: 5px;
+  width: 4px;
+  height: 4px;
+  background-color: #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.9);
+}
+
+.block[data-is-top="true"]:hover {
+  transform: translateY(-3px) scale(1.02);
+  filter: brightness(1.22) saturate(1.25);
+  z-index: 4;
+}
+
+/* 持ち上げ中ブロック */
 .block.picked-up {
-  transform: translateY(-6px);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.5), 0 0 10px rgba(255, 255, 255, 0.6);
+  transform: translateY(-8px) scale(1.04);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.6), 0 0 14px rgba(255, 255, 255, 0.8) !important;
   z-index: 10;
+  border: 2px solid #ffffff;
   animation: float 1.2s ease-in-out infinite alternate;
 }
 
 .block.is-dragging {
-  opacity: 0.4;
+  opacity: 0.35;
   cursor: grabbing;
+}
+
+/* 落下アニメーション (上から落下して着地バウンド) */
+@keyframes blockDrop {
+  0% {
+    transform: translateY(-50px) scaleY(1.15);
+    opacity: 0.4;
+  }
+  65% {
+    transform: translateY(0) scaleY(0.9);
+    opacity: 1;
+  }
+  82% {
+    transform: translateY(-4px) scaleY(1.03);
+  }
+  100% {
+    transform: translateY(0) scaleY(1);
+    opacity: 1;
+  }
+}
+
+.block.block-dropping {
+  animation: blockDrop 0.28s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  z-index: 5;
 }
 
 @keyframes float {
   from {
-    transform: translateY(-4px);
+    transform: translateY(-6px) scale(1.04);
   }
   to {
-    transform: translateY(-8px);
+    transform: translateY(-10px) scale(1.04);
   }
 }
 
