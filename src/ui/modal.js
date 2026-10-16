@@ -90,7 +90,8 @@ export class GameClearModal {
     const nextBtn = this.container.querySelector('#modal-next-btn');
     nextBtn?.addEventListener('click', () => {
       this.hide();
-      const newSalt = generateRandomSalt();
+      const currentHeight = this.engine.getState().heightLimit;
+      const newSalt = generateRandomSalt(currentHeight);
       this.engine.loadFromSalt(newSalt);
       const url = new URL(window.location.href);
       url.searchParams.set('salt', newSalt);

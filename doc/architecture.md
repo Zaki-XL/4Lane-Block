@@ -114,39 +114,46 @@ export interface IGameEngine {
 
 ---
 
-## 3. ソルトによる盤面再現性 (Deterministic Seeded PRNG)
+## 3. 難読化ソルトによる盤面再現性 (Obfuscated Deterministic PRNG)
 
-ゲーム開始時にランダムな「ソルト（シード文字列）」を発行し、ソルトから擬似乱数列を生成することで、**同一ソルトであれば誰でも全く同じ初期盤面を再現**できます。
+ゲーム開始時に発行されるソルトは、外部から構造（高さや乱数シード）が読み取れないよう暗号的にスクランブルされた8桁の英数字（例: `K8X2-9M4B`）となります。
 
 ```mermaid
-sequenceDiagram
-    autonumber
-    actor User as ユーザー
-    participant UI as 画面 / URL
-    participant Generator as Seeded Generator
-    participant PRNG as Mulberry32 (PRNG)
-    participant Engine as GameEngine
-
-    alt 新規ゲーム開始
-        UI->>Generator: ランダムソルト生成 (例: "4LB-X9K2")
-    else ソルト入力 or URL指定 (?salt=4LB-X9K2)
-        User->>UI: ソルト文字列を指定
-        UI->>Generator: ソルトを渡す
+graph LR
+    subgraph エンコード (発行)
+        Data["高さ(H) + 乱数シード + 検証値"] -->|40-bitパック| Pack["Raw 40-bit Data"]
+        Pack -->|XORマスク & 可逆アフィン変換| Scramble["難読化 40-bit値 (雪崩効果)"]
+        Scramble -->|Base32変換| Code["8桁コード (例: K8X2-9M4B)"]
     end
 
-    Generator->>PRNG: ソルト文字列をハッシュ化してシード値(32bit uint)に変換
-    loop ブロックシャッフル
-        Generator->>PRNG: 次の乱数を要求 (0.0 ~ 1.0)
-        PRNG-->>Generator: 決定論的擬似乱数
+    subgraph デコード (復元)
+        Code -->|Base32デコード| DeScramble["難読化値"]
+        DeScramble -->|逆アフィン変換 & 逆XOR| Unpack["Raw 40-bit Data"]
+        Unpack -->|チェックサム検証 & 分解| Restore["高さ(H) & 盤面完全復元"]
     end
-    Generator->>Engine: 再現された初期配置を設定
-    Engine-->>UI: 盤面描画 & ソルト共有URL発行
 ```
 
-### 3.1 ソルト仕様
-- **フォーマット**: 読みやすく入力しやすい英数字（例: `4LB-7A9X` または 8文字のBase36/Hex）。
-- **シード変換**: ソルト文字列から 32-bit 整数のシード値を算出（FNV-1a または MurmurHash3）。
-- **乱数アルゴリズム**: **Mulberry32**（実装が32-bitシフトのみで極めて軽量、高速、かつブラウザ環境に依存せず完全同一の出力を保証）。
+### 3.1 難読化ソルトの技術仕様
+- **フォーマット**: 誤認しやすい `0, 1, I, O` を除外した英数字8文字（4文字-4文字ハイフン表記: `XXXX-XXXX`）。
+- **データ構造**: 高さ $H$（4-bit: 3〜15） + 乱数シード（26-bit） + エントロピー（5-bit） + チェックサム（5-bit） = 計 40-bit。
+- **暗号置換**:
+  - $2^{40}$ を法とする可逆アフィン暗号変換: $C = (x \times M + A) \pmod{2^{40}}$ （乗算逆元 $M^{-1}$ による完全復元）。
+  - マジックXORマスクとビット撹拌により、高さが1違うだけでコード全体が激変する雪崩効果（アバランシェ効果）を実現。
 - **共有機能**:
-  - Web画面上に現在の「盤面コード（ソルト）」を常時表示・ワンクリックコピーボタンを設置。
-  - URLクエリパラメータ連動: `https://<domain>/?salt=4LB-7A9X` でアクセスすると、その盤面が自動ロードされる。
+  - Web画面上の「SALT」欄に表示、ワンクリックコピー可能。
+  - URLクエリパラメータ連動: `https://<domain>/?salt=K8X2-9M4B` でアクセスすると、設定された高さと配置が完全再現される。
+
+---
+
+## 4. ビューポート動的スケーリング (1画面フィット設計)
+
+高さ $H$ が10段や15段になっても、縦スクロールが発生せず1画面（`100dvh`）内に常に収まるように動的スケーリングを行います。
+
+1. **利用可能領域の動的計算**:
+   - `availableHeight = window.innerHeight - (ヘッダー + コントロールパネル + 操作説明 + 余白)`
+2. **スロット高さの最適化**:
+   - `slotHeight = clamp(16px, floor((availableHeight - gapTotal) / heightLimit), 52px)`
+   - CSS変数 `--slot-height`, `--block-font-size`, `--height-limit` をルート要素へ動的注入。
+3. **リサイズ追従**:
+   - `window.resize` イベントを購読し、ウィンドウサイズ変更時にもリアルタイムで再計算・追従。
+

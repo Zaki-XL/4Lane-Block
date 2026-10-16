@@ -20,8 +20,8 @@ function initApp() {
     return;
   }
 
-  // 1. コアエンジンのインスタンス化
-  const engine = new GameEngine(4);
+  // 1. コアエンジンのインスタンス化 (デフォルト高さ: 10)
+  const engine = new GameEngine(10);
 
   // 2. URLクエリパラメータからソルト取得 (共有URL対応)
   const urlParams = new URLSearchParams(window.location.search);

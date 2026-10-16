@@ -23,6 +23,11 @@ export class TimerAndControlView {
    * UIの描画
    */
   render() {
+    const currentHeight = this.engine.getState().heightLimit;
+    const heightOptions = Array.from({ length: 13 }, (_, i) => i + 3) // 3〜15
+      .map((h) => `<option value="${h}" ${h === currentHeight ? 'selected' : ''}>${h}段</option>`)
+      .join('');
+
     this.element.innerHTML = `
       <div class="stats-panel">
         <div class="stat-card">
@@ -33,12 +38,18 @@ export class TimerAndControlView {
           <span class="stat-label">MOVES</span>
           <span class="stat-value" id="moves-display">0 手</span>
         </div>
+        <div class="stat-card">
+          <span class="stat-label">HEIGHT</span>
+          <select id="height-select" class="height-select" title="レーンの高さを変更">
+            ${heightOptions}
+          </select>
+        </div>
         <div class="stat-card salt-card">
-          <span class="stat-label">SALT (盤面コード)</span>
+          <span class="stat-label">SALT (難読化コード)</span>
           <div class="salt-input-group">
             <input type="text" id="salt-input" class="salt-input" maxlength="12" spellcheck="false" value="${this.engine.getCurrentSalt()}" />
             <button id="load-salt-btn" class="btn btn-secondary" title="このソルトの盤面をロード">読込</button>
-            <button id="copy-salt-btn" class="btn btn-secondary" title="ソルトをクリップボードにコピー">コピー</button>
+            <button id="copy-salt-btn" class="btn btn-secondary" title="共有URLをコピー">コピー</button>
           </div>
         </div>
       </div>
@@ -50,6 +61,7 @@ export class TimerAndControlView {
 
     this.timerDisplay = this.element.querySelector('#timer-display');
     this.movesDisplay = this.element.querySelector('#moves-display');
+    this.heightSelect = /** @type {HTMLSelectElement} */ (this.element.querySelector('#height-select'));
     this.saltInput = /** @type {HTMLInputElement} */ (this.element.querySelector('#salt-input'));
   }
 
@@ -72,15 +84,26 @@ export class TimerAndControlView {
       if (this.saltInput && this.saltInput !== document.activeElement) {
         this.saltInput.value = state.salt;
       }
+      if (this.heightSelect && Number(this.heightSelect.value) !== state.heightLimit) {
+        this.heightSelect.value = String(state.heightLimit);
+      }
       if (state.timerStatus === 'idle' && this.timerDisplay) {
         this.timerDisplay.textContent = GameTimer.formatTime(state.elapsedTime);
       }
     });
 
-    // 新規ゲームボタン
+    // 高さセレクト変更時
+    this.heightSelect?.addEventListener('change', () => {
+      const newHeight = parseInt(this.heightSelect.value, 10);
+      this.engine.setHeightLimit(newHeight);
+      this.updateUrlParam(this.engine.getCurrentSalt());
+    });
+
+    // 新規ゲームボタン (現在の高さで新規ソルト生成)
     const newGameBtn = this.element.querySelector('#new-game-btn');
     newGameBtn?.addEventListener('click', () => {
-      const newSalt = generateRandomSalt();
+      const currentHeight = this.engine.getState().heightLimit;
+      const newSalt = generateRandomSalt(currentHeight);
       this.engine.loadFromSalt(newSalt);
       this.updateUrlParam(newSalt);
     });
@@ -97,7 +120,7 @@ export class TimerAndControlView {
       const inputVal = this.saltInput?.value.trim();
       if (inputVal) {
         this.engine.loadFromSalt(inputVal);
-        this.updateUrlParam(inputVal);
+        this.updateUrlParam(this.engine.getCurrentSalt());
       }
     });
 
@@ -107,7 +130,7 @@ export class TimerAndControlView {
         const inputVal = this.saltInput.value.trim();
         if (inputVal) {
           this.engine.loadFromSalt(inputVal);
-          this.updateUrlParam(inputVal);
+          this.updateUrlParam(this.engine.getCurrentSalt());
           this.saltInput.blur();
         }
       }
@@ -117,8 +140,8 @@ export class TimerAndControlView {
     const copySaltBtn = this.element.querySelector('#copy-salt-btn');
     copySaltBtn?.addEventListener('click', async () => {
       const currentSalt = this.engine.getCurrentSalt();
+      const shareUrl = `${window.location.origin}${window.location.pathname}?salt=${encodeURIComponent(currentSalt)}`;
       try {
-        const shareUrl = `${window.location.origin}${window.location.pathname}?salt=${encodeURIComponent(currentSalt)}`;
         await navigator.clipboard.writeText(shareUrl);
         if (copySaltBtn) {
           const originalText = copySaltBtn.textContent;
@@ -128,8 +151,7 @@ export class TimerAndControlView {
           }, 1500);
         }
       } catch (err) {
-        // クリップボードAPI失敗時のフォールバック
-        prompt('このURLをコピーして盤面を共有してください:', window.location.href);
+        prompt('このURLをコピーして盤面を共有してください:', shareUrl);
       }
     });
   }

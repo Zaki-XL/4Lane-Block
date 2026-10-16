@@ -1,17 +1,17 @@
 // @ts-check
 import { BlockColor } from './types.js';
-import { hashString, Mulberry32, generateRandomSalt } from './prng.js';
+import { hashString, Mulberry32, generateRandomSalt, decodeObfuscatedSalt, encodeObfuscatedSalt } from './prng.js';
 import { GameTimer } from './timer.js';
 
 /**
  * 4Lane Block コアゲームエンジン
- * 盤面状態の管理、ルール検証、確定的なソルト盤面生成、タイマー連携を提供する
+ * 盤面状態の管理、ルール検証、確定的な難読化ソルト盤面生成、タイマー連携を提供する
  */
 export class GameEngine {
   /**
-   * @param {number} [heightLimit=4] レーンの高さ上限 H
+   * @param {number} [heightLimit=10] レーンの高さ上限 H (デフォルト: 10)
    */
-  constructor(heightLimit = 4) {
+  constructor(heightLimit = 10) {
     /** @type {number} */
     this.heightLimit = heightLimit;
     /** @type {string} */
@@ -41,8 +41,8 @@ export class GameEngine {
       this.emit('timerTick', ms);
     });
 
-    // 初期ソルトで盤面生成
-    this.loadFromSalt(generateRandomSalt());
+    // 初期難読化ソルトで盤面生成
+    this.loadFromSalt(generateRandomSalt(this.heightLimit));
   }
 
   /**
@@ -74,6 +74,7 @@ export class GameEngine {
 
   /**
    * ソルトを指定して盤面を確定的に初期化・再構築する
+   * 難読化ソルトから高さHを自動抽出し、シード値から決定論的に盤面を生成
    * @param {string} salt
    */
   loadFromSalt(salt) {
@@ -83,7 +84,13 @@ export class GameEngine {
     this.isCleared = false;
     this.selectedLaneIndex = null;
 
-    const seed = hashString(this.salt);
+    // 難読化ソルトのデコード
+    const decoded = decodeObfuscatedSalt(this.salt);
+    if (decoded.isValid) {
+      this.heightLimit = decoded.height;
+    }
+
+    const seed = decoded.isValid ? decoded.seed : hashString(this.salt);
     const prng = new Mulberry32(seed);
 
     let attempts = 0;
@@ -93,6 +100,17 @@ export class GameEngine {
     } while (this.checkWin() && attempts < 100);
 
     this.emit('stateChange', this.getState());
+  }
+
+  /**
+   * レーンの高さを変更し、新しい難読化ソルトで盤面を再生成する
+   * @param {number} newHeight (3〜15)
+   */
+  setHeightLimit(newHeight) {
+    const clamped = Math.max(3, Math.min(15, Math.floor(newHeight)));
+    this.heightLimit = clamped;
+    const newSalt = generateRandomSalt(this.heightLimit);
+    this.loadFromSalt(newSalt);
   }
 
   /**
