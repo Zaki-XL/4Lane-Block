@@ -384,15 +384,18 @@ body {
 /* 落下アニメーション (上から落下して着地バウンド) */
 @keyframes blockDrop {
   0% {
-    transform: translateY(-50px) scaleY(1.15);
-    opacity: 0.4;
+    transform: translateY(-90px) scaleY(1.18);
+    opacity: 0.3;
   }
-  65% {
-    transform: translateY(0) scaleY(0.9);
+  60% {
+    transform: translateY(0) scaleY(0.88);
     opacity: 1;
   }
-  82% {
-    transform: translateY(-4px) scaleY(1.03);
+  78% {
+    transform: translateY(-6px) scaleY(1.04);
+  }
+  90% {
+    transform: translateY(0) scaleY(0.96);
   }
   100% {
     transform: translateY(0) scaleY(1);
@@ -401,7 +404,7 @@ body {
 }
 
 .block.block-dropping {
-  animation: blockDrop 0.28s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: blockDrop 0.48s cubic-bezier(0.25, 1, 0.4, 1) forwards;
   z-index: 5;
 }
 
