@@ -101,10 +101,10 @@ export class BoardRenderer {
       if (isSelected) laneEl.classList.add('lane-selected');
       if (isFocused) laneEl.classList.add('keyboard-focused');
 
-      // レーン番号ヘッダー
+      // レーン番号および容量ヘッダー ([1] L1 と 3/10 を表示)
       const headerEl = document.createElement('div');
       headerEl.className = 'lane-header';
-      headerEl.innerHTML = `<span class="lane-num">[${laneIdx + 1}]</span> L${laneIdx + 1}`;
+      headerEl.innerHTML = `<span class="lane-num">[${laneIdx + 1}] L${laneIdx + 1}</span><span class="lane-cap">${lane.length}/${state.heightLimit}</span>`;
       laneEl.appendChild(headerEl);
 
       // スロットコンテナ (下から上へ積み上げる)
