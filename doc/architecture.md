@@ -41,20 +41,23 @@ graph TD
     end
 
     subgraph CoreLayer ["コア・ゲームエンジン (Core API)"]
-        API["GameEngine API<br/>(pick, drop, move, cancel, reset, loadSalt)"]
+        API["GameEngine API<br/>(start, pick, drop, move, cancel, reset, loadSalt)"]
         StateMgr["State Manager<br/>(スタック管理, 高さ検証, 勝利判定)"]
+        TimerMgr["Timer Manager<br/>(高精度カウントアップ計測)"]
         PRNG["Seeded PRNG<br/>(ソルト駆動 盤面生成器)"]
     end
 
     subgraph ViewLayer ["プレゼンテーション層 (View / Renderer)"]
-        Renderer["DOM / Canvas Renderer<br/>(ブロック描画, アニメーション)"]
+        Renderer["DOM / Canvas Renderer<br/>(ブロック描画, タイマーUI表示, アニメーション)"]
         Sound["Audio Manager<br/>(効果音, BGM)"]
     end
 
     InputLayer -->|API呼び出し| API
     API --> StateMgr
+    StateMgr --> TimerMgr
     StateMgr --> PRNG
     StateMgr -->|状態変化イベント (stateChange)| Renderer
+    TimerMgr -->|毎フレーム経過時間 (timerTick)| Renderer
     StateMgr -->|クリアイベント (gameClear)| Sound
 ```
 
@@ -79,16 +82,18 @@ export interface IGameEngine {
   canMove(fromIndex: number, toIndex: number): boolean;
   move(fromIndex: number, toIndex: number): boolean;
 
-  // ゲーム制御・盤面再現
-  reset(): void;
+  // ゲーム制御・盤面再現・タイマー
+  start(): void; // ゲーム開始 (カウントアップタイマー起動)
+  reset(): void; // リトライ (タイマー初期化)
   loadFromSalt(salt: string): void;
   getCurrentSalt(): string;
 
   // イベント購読
   on(event: 'stateChange', listener: (state: GameState) => void): void;
+  on(event: 'timerTick', listener: (elapsedTime: number) => void): void;
   on(event: 'moveSuccess', listener: (move: { from: number; to: number; block: Block }) => void): void;
   on(event: 'invalidMove', listener: (reason: string) => void): void;
-  on(event: 'gameClear', listener: (result: { moveCount: number; elapsedTime: number }) => void): void;
+  on(event: 'gameClear', listener: (result: { moveCount: number; elapsedTime: number; salt: string }) => void): void;
 }
 ```
 
