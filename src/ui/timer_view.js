@@ -60,10 +60,13 @@ export class TimerAndControlView {
           </div>
         </div>
 
-        <!-- アクションボタン (リセットに一本化) -->
+        <!-- アクションボタン (リセット & 設定) -->
         <div class="hud-actions">
-          <button id="reset-game-btn" class="btn btn-reset" title="盤面を初期化して設定・待機状態に戻す">
+          <button id="reset-game-btn" class="btn btn-reset" title="盤面を初期状態にリセットして即座に開始">
             🔄 リセット
+          </button>
+          <button id="open-settings-btn" class="btn btn-secondary btn-settings" title="段数・難易度・ソルトの設定を開く">
+            ⚙️ 設定
           </button>
         </div>
       </div>
@@ -113,10 +116,16 @@ export class TimerAndControlView {
       }
     });
 
-    // 🔄 リセットボタン (盤面を初期状態に戻し、待機中設定コンソールを開く)
+    // 🔄 リセットボタン (盤面を初期状態に戻し、即座に次のプレイを開始可能にする)
     const resetGameBtn = this.element.querySelector('#reset-game-btn');
     resetGameBtn?.addEventListener('click', () => {
       this.engine.reset();
+    });
+
+    // ⚙️ 設定ボタン (段数・難易度・ソルトのモーダルを開く)
+    const openSettingsBtn = this.element.querySelector('#open-settings-btn');
+    openSettingsBtn?.addEventListener('click', () => {
+      this.engine.emit('requestOpenSettings');
     });
 
     // ソルトバッジクリックで共有URLをコピー

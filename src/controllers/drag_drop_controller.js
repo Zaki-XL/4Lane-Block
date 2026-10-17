@@ -13,6 +13,8 @@ export class DragDropInputController {
   constructor(engine, containerElement) {
     this.engine = engine;
     this.container = containerElement;
+    /** @type {number | null} */
+    this.draggedFromIndex = null;
 
     this.handleDragStart = this.handleDragStart.bind(this);
     this.handleDragOver = this.handleDragOver.bind(this);
@@ -61,6 +63,7 @@ export class DragDropInputController {
     if (laneIndexStr === null) return;
     const laneIndex = parseInt(laneIndexStr, 10);
 
+    this.draggedFromIndex = laneIndex;
     event.dataTransfer.setData('text/plain', String(laneIndex));
     event.dataTransfer.effectAllowed = 'move';
     blockEl.classList.add('is-dragging');
@@ -111,7 +114,7 @@ export class DragDropInputController {
     event.preventDefault();
     const target = /** @type {HTMLElement} */ (event.target);
     const laneEl = target.closest('[data-lane-index]');
-    if (!laneEl || !event.dataTransfer) return;
+    if (!laneEl) return;
 
     laneEl.classList.remove('drag-hover');
 
@@ -119,12 +122,16 @@ export class DragDropInputController {
     if (toIndexStr === null) return;
     const toIndex = parseInt(toIndexStr, 10);
 
-    const fromIndexStr = event.dataTransfer.getData('text/plain');
-    if (!fromIndexStr) return;
-    const fromIndex = parseInt(fromIndexStr, 10);
+    const fromIndexStr = event.dataTransfer ? event.dataTransfer.getData('text/plain') : '';
+    const fromIndex = this.draggedFromIndex !== null
+      ? this.draggedFromIndex
+      : (fromIndexStr ? parseInt(fromIndexStr, 10) : null);
+
+    if (fromIndex === null || isNaN(fromIndex)) return;
 
     // コアAPI経由でブロック移動
     this.engine.move(fromIndex, toIndex);
+    this.draggedFromIndex = null;
   }
 
   /**
@@ -134,6 +141,7 @@ export class DragDropInputController {
   handleDragEnd(event) {
     const target = /** @type {HTMLElement} */ (event.target);
     target.classList.remove('is-dragging');
+    this.draggedFromIndex = null;
     const allLanes = this.container.querySelectorAll('[data-lane-index]');
     allLanes.forEach((el) => el.classList.remove('drag-hover'));
   }

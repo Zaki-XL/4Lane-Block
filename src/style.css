@@ -82,34 +82,34 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px;
 }
 
 /* メイン情報 (TIMEとMOVESを特大強調) */
 .hud-primary-stats {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .stat-time-card {
-  min-width: 105px;
+  min-width: 95px;
   background: rgba(15, 23, 42, 0.85);
   border: 1px solid rgba(56, 189, 248, 0.4);
   box-shadow: 0 0 12px rgba(56, 189, 248, 0.15);
-  padding: 3px 8px;
+  padding: 3px 6px;
 }
 
 .stat-moves-card {
-  min-width: 75px;
+  min-width: 65px;
   background: rgba(15, 23, 42, 0.85);
   border: 1px solid rgba(251, 191, 36, 0.35);
   box-shadow: 0 0 10px rgba(251, 191, 36, 0.12);
-  padding: 3px 8px;
+  padding: 3px 6px;
 }
 
 .stat-value.time-value {
-  font-size: 1.4rem;
+  font-size: 1.35rem;
   font-weight: 900;
   color: #38bdf8;
   letter-spacing: -0.5px;
@@ -117,7 +117,7 @@ body {
 }
 
 .stat-value.moves-value {
-  font-size: 1.25rem;
+  font-size: 1.2rem;
   font-weight: 800;
   color: #fbbf24;
 }
@@ -126,9 +126,9 @@ body {
 .hud-secondary-stats {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
   flex: 1;
-  min-width: 150px;
+  min-width: 110px;
 }
 
 .hud-meta-row {
@@ -212,6 +212,7 @@ body {
 .hud-actions {
   display: flex;
   align-items: center;
+  gap: 8px;
   flex-shrink: 0;
 }
 
@@ -242,6 +243,27 @@ body {
 .hud-actions .btn-reset:active {
   transform: translateY(0) scale(0.98);
   box-shadow: 0 1px 4px rgba(239, 68, 68, 0.4);
+}
+
+.btn.btn-settings,
+.hud-actions .btn-settings {
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  color: #38bdf8;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  transition: all 0.15s ease;
+}
+
+.btn.btn-settings:hover,
+.hud-actions .btn-settings:hover {
+  background: rgba(56, 189, 248, 0.15);
+  border-color: #38bdf8;
+  color: #ffffff;
+  transform: translateY(-1px);
 }
 
 
@@ -316,9 +338,9 @@ body {
   transition: filter 0.35s ease, opacity 0.35s ease;
 }
 
-/* 開始前の盤面保護（ぼかし） */
+/* 設定モーダル表示時の盤面背景（ぼかし） */
 .lanes-wrapper.board-blurred {
-  filter: blur(14px) brightness(0.5);
+  filter: blur(8px) brightness(0.6);
   pointer-events: none;
   user-select: none;
 }
@@ -328,16 +350,34 @@ body {
   to { opacity: 1; }
 }
 
-/* スタートオーバーレイ (盤面保護中・設定コンソール) */
+/* 設定モーダル (バックドロップ) */
 .start-overlay {
   position: absolute;
   inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 25;
-  animation: fadeIn 0.25s ease forwards;
+  z-index: 50;
+  background: rgba(0, 0, 0, 0.65);
+  animation: fadeIn 0.2s ease forwards;
   padding: 10px;
+}
+
+.modal-close-icon-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  transition: all 0.15s ease;
+}
+
+.modal-close-icon-btn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .start-overlay-card {
@@ -689,6 +729,14 @@ body {
   /* 下位ブロックの沈静化表現 (操作不可であることを明確化) */
   filter: brightness(0.68) saturate(0.8);
   opacity: 0.88;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.block-label {
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 /* 各レーンの最上位ブロック (操作対象: 鮮やかに発光・強調) */

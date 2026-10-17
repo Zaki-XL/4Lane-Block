@@ -21,10 +21,17 @@ export class BoardRenderer {
     this.currentHeightLimit = 10;
     /** @type {string | null} */
     this.lastDroppedBlockId = null;
+    this.isSettingsOpen = false;
 
     // ゲームクリア時の演出購読
     this.engine.on('gameClear', () => {
       this.triggerVictoryWave();
+    });
+
+    // ⚙️ 設定モーダル要求購読
+    this.engine.on('requestOpenSettings', () => {
+      this.isSettingsOpen = true;
+      this.render(this.engine.getState());
     });
 
     // ウィンドウリサイズ時に動的スケーリングを再計算
@@ -108,11 +115,9 @@ export class BoardRenderer {
     this.updateViewportFit(state.heightLimit);
     this.container.innerHTML = '';
 
-    const isIdle = state.timerStatus === 'idle';
-
-    // 4レーンを内包するラッパー
+    // 4レーンを内包するラッパー (設定モーダルが開いている時のみ軽くブラー)
     const lanesWrapper = document.createElement('div');
-    lanesWrapper.className = `lanes-wrapper ${isIdle ? 'board-blurred' : ''}`;
+    lanesWrapper.className = `lanes-wrapper ${this.isSettingsOpen ? 'board-blurred' : ''}`;
 
     for (let laneIdx = 0; laneIdx < 4; laneIdx++) {
       const lane = state.lanes[laneIdx];
@@ -143,7 +148,7 @@ export class BoardRenderer {
         const block = lane[slotIdx];
         if (block) {
           const isTop = slotIdx === lane.length - 1;
-          const blockEl = this.createBlockElement(block, isTop, isSelected && isTop, isIdle);
+          const blockEl = this.createBlockElement(block, isTop, isSelected && isTop);
           slotEl.appendChild(blockEl);
         } else {
           slotEl.classList.add('slot-empty');
@@ -164,18 +169,18 @@ export class BoardRenderer {
 
     this.container.appendChild(lanesWrapper);
 
-    // 開始前 (idle) の場合は設定コンソール付きのスタートオーバーレイを表示
-    if (isIdle) {
-      this.renderStartOverlay(state);
+    // ⚙️ 設定モーダルが開いている場合は表示
+    if (this.isSettingsOpen) {
+      this.renderSettingsModal(state);
     }
   }
 
   /**
-   * 待機中設定オーバーレイの描画
+   * 設定モーダルの描画 (⚙️ 設定ボタンから開閉)
    * @private
    * @param {import('../core/types.js').GameState} state
    */
-  renderStartOverlay(state) {
+  renderSettingsModal(state) {
     const currentHeight = state.heightLimit;
     const currentDiff = state.difficultyLevel || 5;
     const targets = calculateTargets(currentHeight, currentDiff);
@@ -183,15 +188,16 @@ export class BoardRenderer {
     const bestScoreStr = bestRecord ? `${bestRecord.score.toLocaleString()} 点` : '---';
 
     const overlayEl = document.createElement('div');
-    overlayEl.className = 'start-overlay';
+    overlayEl.className = 'start-overlay settings-modal-backdrop';
     overlayEl.innerHTML = `
-      <div class="start-overlay-card">
+      <div class="start-overlay-card settings-modal-card">
         <div class="overlay-card-header">
-          <span class="shield-icon">🛡️</span>
-          <div>
-            <h3 class="start-overlay-title">盤面保護中・ゲーム設定</h3>
-            <p class="start-overlay-desc">開始すると盤面がオープンし、タイマー計測が始まります</p>
+          <span class="shield-icon">⚙️</span>
+          <div style="flex: 1;">
+            <h3 class="start-overlay-title">ゲーム設定</h3>
+            <p class="start-overlay-desc">段数や難易度をカスタマイズして挑戦できます</p>
           </div>
+          <button id="modal-close-icon-btn" class="modal-close-icon-btn" title="閉じる">✕</button>
         </div>
 
         <div class="overlay-config-form">
@@ -245,7 +251,7 @@ export class BoardRenderer {
         </div>
 
         <button class="btn btn-primary start-play-btn" id="start-game-btn">
-          ▶ ゲーム開始 (盤面を開く)
+          ✓ 設定を適用して盤面に戻る
         </button>
       </div>
     `;
@@ -264,13 +270,18 @@ export class BoardRenderer {
     const loadSaltBtn = overlayEl.querySelector('#overlay-load-salt-btn');
     const copySaltBtn = overlayEl.querySelector('#overlay-copy-salt-btn');
     const startBtn = overlayEl.querySelector('#start-game-btn');
+    const closeIconBtn = overlayEl.querySelector('#modal-close-icon-btn');
+
+    const closeModal = () => {
+      this.isSettingsOpen = false;
+      this.render(this.engine.getState());
+    };
 
     // 難易度スライダー連動
     // @ts-ignore
     diffSlider?.addEventListener('input', () => {
       // @ts-ignore
       const lvl = parseInt(diffSlider.value, 10);
-      this.engine.setDifficultyLevel(lvl);
       const h = this.engine.getState().heightLimit;
       const t = calculateTargets(h, lvl);
       if (diffText) diffText.textContent = `Lv ${lvl} ${DifficultyTitles[lvl]}`;
@@ -281,6 +292,13 @@ export class BoardRenderer {
       // ハイスコア表示更新
       const record = getHighScore(lvl);
       if (bestScoreEl) bestScoreEl.textContent = record ? `${record.score.toLocaleString()} 点` : '---';
+    });
+
+    // @ts-ignore
+    diffSlider?.addEventListener('change', () => {
+      // @ts-ignore
+      const lvl = parseInt(diffSlider.value, 10);
+      this.engine.setDifficultyLevel(lvl);
     });
 
     // 段数スライダー連動 (ドラッグ中は数値と目標プレビューのみ更新、確定時に盤面再構築)
@@ -303,13 +321,14 @@ export class BoardRenderer {
       this.updateUrlParam(this.engine.getCurrentSalt());
     });
 
-
     // 新規ソルト生成
     newSaltBtn?.addEventListener('click', () => {
       const h = this.engine.getState().heightLimit;
       const newSalt = generateRandomSalt(h);
       this.engine.loadFromSalt(newSalt);
       this.updateUrlParam(newSalt);
+      // @ts-ignore
+      if (saltInput) saltInput.value = newSalt;
     });
 
     // ソルトロード
@@ -346,9 +365,15 @@ export class BoardRenderer {
       }
     });
 
-    // ゲーム開始ボタン
-    startBtn?.addEventListener('click', () => {
-      this.engine.start();
+    // 閉じるボタン
+    startBtn?.addEventListener('click', closeModal);
+    closeIconBtn?.addEventListener('click', closeModal);
+
+    // バックドロップクリックで閉じる
+    overlayEl.addEventListener('click', (e) => {
+      if (e.target === overlayEl) {
+        closeModal();
+      }
     });
 
     this.container.appendChild(overlayEl);
@@ -379,27 +404,13 @@ export class BoardRenderer {
    * @param {import('../core/types.js').Block} block
    * @param {boolean} isTop
    * @param {boolean} isPickedUp
-   * @param {boolean} [isIdle=false]
    * @returns {HTMLElement}
    */
-  createBlockElement(block, isTop, isPickedUp, isIdle = false) {
+  createBlockElement(block, isTop, isPickedUp) {
     const el = document.createElement('div');
     el.className = `block block-${block.color.toLowerCase()}`;
     el.setAttribute('data-block-id', block.id);
     el.setAttribute('data-color', block.color);
-
-    // 待機中 (idle) の場合、初期配置特定を防ぐランダム波打ち＆色シフトアニメーションを適用
-    if (isIdle) {
-      el.classList.add('idle-scrambling');
-      const randomDelay = (Math.random() * -4).toFixed(2);
-      const randomDur = (1.8 + Math.random() * 2.2).toFixed(2);
-      const randomOffset = ((Math.random() - 0.5) * 50).toFixed(0);
-      const randomHue = Math.floor(Math.random() * 360);
-      el.style.setProperty('--scramble-delay', `${randomDelay}s`);
-      el.style.setProperty('--scramble-dur', `${randomDur}s`);
-      el.style.setProperty('--scramble-offset', `${randomOffset}px`);
-      el.style.setProperty('--scramble-hue', `${randomHue}deg`);
-    }
 
     // 新規着地ブロックに落下アニメーションを適用
     if (this.lastDroppedBlockId === block.id) {
@@ -421,7 +432,8 @@ export class BoardRenderer {
       }
     }
 
-    if (isTop && !isIdle) {
+    // 最上位ブロックは常に操作可能 (最初から直接クリック＆ドラッグ可能)
+    if (isTop) {
       el.setAttribute('data-is-top', 'true');
       el.setAttribute('draggable', 'true');
       el.title = 'ドラッグまたはクリックして移動';
