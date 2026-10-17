@@ -1,3 +1,29 @@
-# Ignore scratch and temporary artifacts
-scratch/
+# ========================================================
+# 4Lane Block - Default Deny (Whitelist) .gitignore
+# 原則全除外：公開必要なファイル・ディレクトリのみを明示的に許可
+# ========================================================
+
+# 1. ルート直下の全ファイル・全ディレクトリを原則無視
+/*
+
+# 2. 公開対象（ホワイトリスト）のファイルのみ許可
+!/index.html
+!/start.bat
+!/README.md
+!/README_*.md
+!/LICENSE*
+!/.gitignore
+
+# 3. 公開対象（ホワイトリスト）のディレクトリのみ許可
+!/src/
+!/src/**
+!/assets/
+!/assets/**
+
+# 4. 許可ディレクトリ内でも、一時ファイル・ログ・機密情報は再帰的に除外
 *.log
+*.tmp
+.DS_Store
+Thumbs.db
+.env*
+node_modules/

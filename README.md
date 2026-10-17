@@ -102,26 +102,5 @@ python -m http.server 8000
 │       ├── timer_view.js      # タイマー・手数・ソルト操作パネル (HUD)
 │       ├── rta_view.js        # RTAスプリット比較枠 (LiveSplit風)
 │       └── modal.js           # 各種モーダル (リザルト、設定、ヘルプ、RTA記録)
-└── doc/
-    ├── game_specification.md  # 詳細ゲーム仕様書
-    ├── architecture.md        # システム・アーキテクチャ設計書
-    └── reviewer_report.md     # 品質・セキュリティ検証結果レビュー報告書
 ```
-
----
-
-## ドキュメント一覧
-
-- [詳細ゲーム仕様書](doc/game_specification.md)
-  - フィールドおよびオブジェクトの詳細パラメータ
-  - プレイヤー操作シーケンス
-  - 状態遷移図およびデータモデル設計
-  - 盤面生成ロジックとクリア判定アルゴリズム
-- [システム・アーキテクチャ設計書](doc/architecture.md)
-  - 無料ホスティング（GitHub Pages等）公開構成
-  - 操作APIインターフェース定義と入力ラッパー層設計
-  - 決定論的PRNG（Mulberry32）によるソルト盤面再現アルゴリズム
-- [品質・セキュリティ検証結果レビュー報告書](doc/reviewer_report.md)
-  - 全モジュール構文検査・コアユニットテスト結果
-  - E2E手動・自動検証およびコンソールエラー監査結果
 
