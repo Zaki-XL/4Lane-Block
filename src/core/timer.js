@@ -8,6 +8,12 @@ const safeCancelAnimationFrame = typeof cancelAnimationFrame !== 'undefined'
   : (id) => clearTimeout(/** @type {any} */ (id));
 
 /**
+ * タイム上限値 (ms)
+ * 99分59秒99 = 99 * 60 * 1000 + 59 * 1000 + 990 = 5,999,990 ms
+ */
+export const MAX_TIME_MS = 5999990;
+
+/**
  * 高精度カウントアップタイマー
  * performance.now() を基準とし、ドリフトのない正確なミリ秒経過時間を管理する
  */
@@ -43,7 +49,7 @@ export class GameTimer {
     if (!this.isRunning) return this.elapsedTime;
     this.isRunning = false;
     if (this.startTime !== null) {
-      this.elapsedTime = performance.now() - this.startTime;
+      this.elapsedTime = Math.min(MAX_TIME_MS, performance.now() - this.startTime);
     }
     if (this.rafId !== null) {
       safeCancelAnimationFrame(this.rafId);
@@ -69,9 +75,9 @@ export class GameTimer {
    */
   getElapsed() {
     if (this.isRunning && this.startTime !== null) {
-      return performance.now() - this.startTime;
+      return Math.min(MAX_TIME_MS, performance.now() - this.startTime);
     }
-    return this.elapsedTime;
+    return Math.min(MAX_TIME_MS, this.elapsedTime);
   }
 
   /**
@@ -81,7 +87,13 @@ export class GameTimer {
   loop() {
     if (!this.isRunning) return;
     if (this.startTime !== null) {
-      this.elapsedTime = performance.now() - this.startTime;
+      const elapsed = performance.now() - this.startTime;
+      if (elapsed >= MAX_TIME_MS) {
+        this.elapsedTime = MAX_TIME_MS;
+        this.stop();
+        return;
+      }
+      this.elapsedTime = elapsed;
     }
     this.notify();
     this.rafId = safeRequestAnimationFrame(() => this.loop());
@@ -114,10 +126,11 @@ export class GameTimer {
    * @returns {string}
    */
   static formatTime(ms) {
-    const totalSeconds = ms / 1000;
+    const clampedMs = Math.min(MAX_TIME_MS, Math.max(0, ms));
+    const totalSeconds = clampedMs / 1000;
     const minutes = Math.floor(totalSeconds / 60);
     const seconds = Math.floor(totalSeconds % 60);
-    const centiseconds = Math.floor((ms % 1000) / 10);
+    const centiseconds = Math.floor((clampedMs % 1000) / 10);
 
     const mStr = String(minutes).padStart(2, '0');
     const sStr = String(seconds).padStart(2, '0');

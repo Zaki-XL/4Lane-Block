@@ -1,20 +1,5 @@
 // @ts-check
 
-/**
- * 難易度レベル定義 (1〜10)
- */
-export const DifficultyTitles = Object.freeze({
-  1: '初心者 (Novice)',
-  2: '入門 (Beginner)',
-  3: '初級 (Apprentice)',
-  4: '中級 (Regular)',
-  5: '標準 (Standard)',
-  6: '上級 (Skilled)',
-  7: '熟練 (Veteran)',
-  8: '達人 (Expert)',
-  9: '名人 (Master)',
-  10: '神話 (Mythic)'
-});
 
 /**
  * 反比例式により難易度レベルに応じた1手あたりの基準秒数を算出する

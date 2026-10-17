@@ -1,5 +1,5 @@
 // @ts-check
-import { GameEngine } from '../core/game_engine.js';
+import { GameEngine } from '../core/game_engine.js?v=3.7';
 
 /**
  * モバイル・タッチ統合操作コントローラー
@@ -57,8 +57,8 @@ export class TouchInputController {
    * @param {PointerEvent} event
    */
   handlePointerDown(event) {
-    // マウス左ボタンまたはタッチ操作のみ
-    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    // マウス操作は ClickInputController および DragDropInputController が担当するため除外
+    if (event.pointerType === 'mouse') return;
 
     const target = /** @type {HTMLElement} */ (event.target);
     const laneEl = target.closest('[data-lane-index]');

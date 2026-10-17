@@ -1,8 +1,7 @@
 // @ts-check
-import { GameTimer } from '../core/timer.js';
-import { GameEngine } from '../core/game_engine.js';
-import { generateRandomSalt } from '../core/prng.js';
-import { DifficultyTitles, calculateTargets } from '../core/difficulty.js';
+import { GameTimer } from '../core/timer.js?v=3.9';
+import { GameEngine } from '../core/game_engine.js?v=3.9';
+import { t, i18n } from '../i18n/index.js?v=3.9';
 
 /**
  * タイマーおよびコントロールパネルのUIビュー (画面上部HUD)
@@ -18,6 +17,11 @@ export class TimerAndControlView {
 
     this.render();
     this.bindEvents();
+
+    // 言語変更時にHUDを更新
+    i18n.onLanguageChange(() => {
+      this.updateTexts();
+    });
   }
 
   /**
@@ -27,46 +31,37 @@ export class TimerAndControlView {
     const state = this.engine.getState();
     const currentHeight = state.heightLimit;
     const currentDiff = state.difficultyLevel || 5;
-    const targets = calculateTargets(currentHeight, currentDiff);
 
     this.element.innerHTML = `
       <div class="hud-container">
         <!-- 左側：メイン統計 (TIME & MOVES: 固定幅・等幅数字) -->
         <div class="hud-primary-stats">
           <div class="stat-card stat-time-card">
-            <span class="stat-label">TIME</span>
+            <span class="stat-label" id="label-time">${t('hud.time')}</span>
             <span class="stat-value time-value" id="timer-display">00:00.00</span>
           </div>
           <div class="stat-card stat-moves-card">
-            <span class="stat-label">MOVES</span>
-            <span class="stat-value moves-value" id="moves-display">0 手</span>
+            <span class="stat-label" id="label-moves">${t('hud.moves')}</span>
+            <span class="stat-value moves-value" id="moves-display">0</span>
           </div>
         </div>
 
-        <!-- 中央：サブ目標情報 -->
+        <!-- 中央：設定バッジ情報 -->
         <div class="hud-secondary-stats">
-          <div class="hud-meta-row">
-            <div class="meta-item target-meta" id="hud-target-text">
-              <span class="meta-label">TARGET:</span>
-              <strong id="target-moves-text">${targets.targetMoves}手</strong> / <strong id="target-time-text">${GameTimer.formatTime(targets.targetTimeMs)}</strong>
-            </div>
-          </div>
-          <div class="hud-meta-row">
-            <div class="config-summary-badges">
-              <span class="config-pill" id="hud-height-pill">${currentHeight}段</span>
-              <span class="config-pill" id="hud-diff-pill">Lv${currentDiff} ${DifficultyTitles[currentDiff]?.split(' ')[0]}</span>
-              <span class="config-pill salt-pill" id="hud-salt-pill" title="クリックして共有URLをコピー">${state.salt || '------'}</span>
-            </div>
+          <div class="config-summary-badges">
+            <span class="config-pill" id="hud-height-pill">${t('hud.tiers', { n: currentHeight })}</span>
+            <span class="config-pill" id="hud-diff-pill">Lv${currentDiff}</span>
+            <span class="config-pill salt-pill" id="hud-salt-pill" title="クリックしてソルトURLをコピー">${state.salt || '------'}</span>
           </div>
         </div>
 
-        <!-- 右側：アクションボタン (リセット & 設定) -->
+        <!-- 右側：アクションボタン (リセット & スコア一覧) -->
         <div class="hud-actions">
-          <button id="reset-game-btn" class="btn btn-reset" title="新規ランダムソルトで再構築">
-            🔄 リセット
+          <button id="reset-game-btn" class="btn btn-reset" title="盤面のリセット・条件変更">
+            ${t('hud.resetBtn')}
           </button>
-          <button id="open-settings-btn" class="btn btn-secondary btn-settings" title="ゲーム設定を開く">
-            ⚙️ 設定
+          <button id="open-score-btn" class="btn btn-secondary btn-score" title="ハイスコア一覧を確認">
+            ${t('hud.scoreBtn')}
           </button>
         </div>
       </div>
@@ -74,11 +69,25 @@ export class TimerAndControlView {
 
     this.timerDisplay = this.element.querySelector('#timer-display');
     this.movesDisplay = this.element.querySelector('#moves-display');
-    this.targetMovesText = this.element.querySelector('#target-moves-text');
-    this.targetTimeText = this.element.querySelector('#target-time-text');
     this.hudHeightPill = this.element.querySelector('#hud-height-pill');
     this.hudDiffPill = this.element.querySelector('#hud-diff-pill');
     this.hudSaltPill = this.element.querySelector('#hud-salt-pill');
+    this.resetBtn = this.element.querySelector('#reset-game-btn');
+    this.scoreBtn = this.element.querySelector('#open-score-btn');
+    this.labelTime = this.element.querySelector('#label-time');
+    this.labelMoves = this.element.querySelector('#label-moves');
+  }
+
+  /**
+   * 言語切り替え時のテキスト一括更新
+   */
+  updateTexts() {
+    const state = this.engine.getState();
+    if (this.labelTime) this.labelTime.textContent = t('hud.time');
+    if (this.labelMoves) this.labelMoves.textContent = t('hud.moves');
+    if (this.hudHeightPill) this.hudHeightPill.textContent = t('hud.tiers', { n: state.heightLimit });
+    if (this.resetBtn) this.resetBtn.textContent = t('hud.resetBtn');
+    if (this.scoreBtn) this.scoreBtn.textContent = t('hud.scoreBtn');
   }
 
   /**
@@ -95,7 +104,7 @@ export class TimerAndControlView {
     // 状態更新リスナー
     this.engine.on('stateChange', (state) => {
       if (this.movesDisplay) {
-        this.movesDisplay.textContent = `${state.moveCount} 手`;
+        this.movesDisplay.textContent = `${state.moveCount}`;
       }
       if (this.timerDisplay) {
         this.timerDisplay.textContent = GameTimer.formatTime(state.elapsedTime);
@@ -103,30 +112,25 @@ export class TimerAndControlView {
 
       // バッジ表示の更新
       const currentDiff = state.difficultyLevel || 5;
-      const targets = calculateTargets(state.heightLimit, currentDiff);
-      if (this.targetMovesText) this.targetMovesText.textContent = `${targets.targetMoves}手`;
-      if (this.targetTimeText) this.targetTimeText.textContent = GameTimer.formatTime(targets.targetTimeMs);
-      if (this.hudHeightPill) this.hudHeightPill.textContent = `${state.heightLimit}段`;
+      if (this.hudHeightPill) this.hudHeightPill.textContent = t('hud.tiers', { n: state.heightLimit });
       if (this.hudDiffPill) {
-        const titleShort = DifficultyTitles[currentDiff]?.split(' ')[0] || '';
-        this.hudDiffPill.textContent = `Lv${currentDiff} ${titleShort}`;
+        this.hudDiffPill.textContent = `Lv${currentDiff}`;
       }
       if (this.hudSaltPill) {
         this.hudSaltPill.textContent = state.salt || '------';
       }
     });
 
-    // 🔄 リセットボタン (新規ランダムソルトで盤面を再構築し、URLも最新化)
+    // 🔄 リセットボタン (設定・リセットモーダルを開く)
     const resetGameBtn = this.element.querySelector('#reset-game-btn');
     resetGameBtn?.addEventListener('click', () => {
-      this.engine.reset(true);
-      this.updateUrlParam(this.engine.getCurrentSalt());
+      this.engine.emit('requestOpenSettings');
     });
 
-    // ⚙️ 設定ボタン (段数・難易度・ソルトのモーダルを開く)
-    const openSettingsBtn = this.element.querySelector('#open-settings-btn');
-    openSettingsBtn?.addEventListener('click', () => {
-      this.engine.emit('requestOpenSettings');
+    // 🏆 スコアボタン (スコア一覧モーダルを開く)
+    const openScoreBtn = this.element.querySelector('#open-score-btn');
+    openScoreBtn?.addEventListener('click', () => {
+      this.engine.emit('requestOpenScoreList');
     });
 
     // ソルトバッジクリックで共有URLをコピー
@@ -137,26 +141,15 @@ export class TimerAndControlView {
         await navigator.clipboard.writeText(shareUrl);
         const originalText = this.hudSaltPill?.textContent;
         if (this.hudSaltPill) {
-          this.hudSaltPill.textContent = 'コピー完了!';
+          this.hudSaltPill.textContent = t('hud.copied');
           setTimeout(() => {
             if (this.hudSaltPill) this.hudSaltPill.textContent = originalText;
           }, 1500);
         }
       } catch (err) {
-        prompt('このURLをコピーして盤面を共有してください:', shareUrl);
+        prompt(t('hud.copyPrompt'), shareUrl);
       }
     });
-  }
-
-
-  /**
-   * ブラウザURLのクエリパラメータを更新する
-   * @param {string} salt
-   */
-  updateUrlParam(salt) {
-    const url = new URL(window.location.href);
-    url.searchParams.set('salt', salt);
-    window.history.replaceState({}, '', url.toString());
   }
 }
 

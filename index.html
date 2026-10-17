@@ -7,13 +7,26 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>4Lane Block - 4レーン・ブロックソートパズル</title>
-  <link rel="stylesheet" href="./src/style.css?v=2.9">
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="./src/style.css?v=3.9">
 </head>
 <body>
   <div class="app-container">
     <header class="header">
-      <h1 class="title">4Lane Block</h1>
-      <p class="subtitle">3色のブロックを各レーンに仕分ける思考型ソートパズル</p>
+      <div class="header-inner">
+        <h1 class="title">4Lane Block</h1>
+        <div class="header-actions">
+          <select id="header-lang-select" class="header-lang-select" aria-label="言語切替">
+            <option value="ja">日本語</option>
+            <option value="en">English</option>
+            <option value="zh">繁體/簡體中文</option>
+            <option value="ko">한국어</option>
+            <option value="es">Español</option>
+            <option value="fr">Français</option>
+          </select>
+          <button id="help-btn" class="btn btn-help-header" title="遊び方・ゲームの目的と機能">❓ ヘルプ</button>
+        </div>
+      </div>
     </header>
 
     <!-- コントロール・ステータスパネル -->
@@ -24,12 +37,12 @@
 
     <!-- 操作説明 -->
     <footer class="instructions-panel">
-      <h4>💡 操作方法 (マルチデバイス対応)</h4>
-      <ul>
-        <li><strong>クリック / タップ:</strong> レーンをクリックしてブロックを持ち上げ、別のレーンをクリックして配置</li>
-        <li><strong>ドラッグ＆ドロップ:</strong> 最上部のブロックを目的のレーンへ直接ドラッグ</li>
-        <li><strong>キーボード:</strong> <span class="key-badge">1</span>〜<span class="key-badge">4</span> で直接レーン指定、または <span class="key-badge">←</span><span class="key-badge">→</span> で移動し <span class="key-badge">Enter</span> / <span class="key-badge">Space</span> で決定、<span class="key-badge">Esc</span> でキャンセル</li>
-      </ul>
+      <h4 id="footer-title">💡 操作方法</h4>
+      <div class="instructions-quick-list">
+        <span id="footer-tap"><strong>タップ / クリック:</strong> 選択・移動</span>
+        <span id="footer-drag"><strong>ドラッグ:</strong> 目的のレーンへ運ぶ</span>
+        <span id="footer-keys"><strong>キー:</strong> <span class="key-badge">1</span>〜<span class="key-badge">4</span>、<span class="key-badge">←</span><span class="key-badge">→</span> + <span class="key-badge">Enter</span>、<span class="key-badge">Esc</span></span>
+      </div>
     </footer>
   </div>
 
@@ -37,6 +50,6 @@
   <div id="modal-container"></div>
 
   <!-- ES Modules メインスクリプト -->
-  <script type="module" src="./src/main.js?v=2.9"></script>
+  <script type="module" src="./src/main.js?v=3.9"></script>
 </body>
 </html>
