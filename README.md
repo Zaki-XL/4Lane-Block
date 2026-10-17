@@ -6,22 +6,24 @@
 各レーンにランダムに積まれた3色のブロックを、レーンの一番上から1つずつ移動させ、最終的に各レーンを1つの色で統一（全3レーン）して完成させることを目指します。
 
 ```mermaid
-graph LR
-    subgraph 初期状態 (ランダム配置)
+flowchart LR
+    subgraph S1["初期状態 (ランダム配置)"]
+        direction TB
         L1["Lane 1<br/>[赤, 青, 緑]"]
         L2["Lane 2<br/>[青, 緑, 赤]"]
         L3["Lane 3<br/>[緑, 赤, 青]"]
         L4["Lane 4<br/>(空き領域)"]
     end
 
-    subgraph ゴール状態 (3レーン完成)
+    subgraph S2["ゴール状態 (3レーン完成)"]
+        direction TB
         G1["Lane 1<br/>[赤, 赤, 赤]"]
         G2["Lane 2<br/>[青, 青, 青]"]
         G3["Lane 3<br/>[緑, 緑, 緑]"]
         G4["Lane 4<br/>(空レーン)"]
     end
 
-    初期状態 -->|ブロック移動| ゴール状態
+    S1 -->|ブロック移動| S2
 ```
 
 ---
