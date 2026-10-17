@@ -115,9 +115,12 @@ export class BoardRenderer {
     this.updateViewportFit(state.heightLimit);
     this.container.innerHTML = '';
 
-    // 4レーンを内包するラッパー (設定モーダルが開いている時のみ軽くブラー)
+    const isIdle = state.timerStatus === 'idle';
+    const showModal = this.isSettingsOpen || isIdle;
+
+    // 4レーンを内包するラッパー (モーダル表示時のみブラー)
     const lanesWrapper = document.createElement('div');
-    lanesWrapper.className = `lanes-wrapper ${this.isSettingsOpen ? 'board-blurred' : ''}`;
+    lanesWrapper.className = `lanes-wrapper ${showModal ? 'board-blurred' : ''}`;
 
     for (let laneIdx = 0; laneIdx < 4; laneIdx++) {
       const lane = state.lanes[laneIdx];
@@ -169,18 +172,19 @@ export class BoardRenderer {
 
     this.container.appendChild(lanesWrapper);
 
-    // ⚙️ 設定モーダルが開いている場合は表示
-    if (this.isSettingsOpen) {
-      this.renderSettingsModal(state);
+    // モーダルの描画 (待機中、または設定ボタン押下時)
+    if (showModal) {
+      this.renderSettingsModal(state, isIdle);
     }
   }
 
   /**
-   * 設定モーダルの描画 (⚙️ 設定ボタンから開閉)
+   * 設定・盤面保護モーダルの描画
    * @private
    * @param {import('../core/types.js').GameState} state
+   * @param {boolean} isIdle
    */
-  renderSettingsModal(state) {
+  renderSettingsModal(state, isIdle) {
     const currentHeight = state.heightLimit;
     const currentDiff = state.difficultyLevel || 5;
     const targets = calculateTargets(currentHeight, currentDiff);
@@ -192,12 +196,12 @@ export class BoardRenderer {
     overlayEl.innerHTML = `
       <div class="start-overlay-card settings-modal-card">
         <div class="overlay-card-header">
-          <span class="shield-icon">⚙️</span>
+          <span class="shield-icon">${isIdle ? '🛡️' : '⚙️'}</span>
           <div style="flex: 1;">
-            <h3 class="start-overlay-title">ゲーム設定</h3>
-            <p class="start-overlay-desc">段数や難易度をカスタマイズして挑戦できます</p>
+            <h3 class="start-overlay-title">${isIdle ? '盤面保護中・ゲーム設定' : 'ゲーム設定'}</h3>
+            <p class="start-overlay-desc">${isIdle ? '開始すると盤面がオープンし、タイマー計測が始まります' : '段数や難易度をカスタマイズして挑戦できます'}</p>
           </div>
-          <button id="modal-close-icon-btn" class="modal-close-icon-btn" title="閉じる">✕</button>
+          ${!isIdle ? '<button id="modal-close-icon-btn" class="modal-close-icon-btn" title="閉じる">✕</button>' : ''}
         </div>
 
         <div class="overlay-config-form">
@@ -251,7 +255,7 @@ export class BoardRenderer {
         </div>
 
         <button class="btn btn-primary start-play-btn" id="start-game-btn">
-          ✓ 設定を適用して盤面に戻る
+          ${isIdle ? '▶ ゲーム開始 (盤面を開く)' : '✓ 設定を適用して盤面に戻る'}
         </button>
       </div>
     `;
@@ -272,9 +276,13 @@ export class BoardRenderer {
     const startBtn = overlayEl.querySelector('#start-game-btn');
     const closeIconBtn = overlayEl.querySelector('#modal-close-icon-btn');
 
-    const closeModal = () => {
+    const handleStartOrClose = () => {
       this.isSettingsOpen = false;
-      this.render(this.engine.getState());
+      if (isIdle) {
+        this.engine.start();
+      } else {
+        this.render(this.engine.getState());
+      }
     };
 
     // 難易度スライダー連動
@@ -365,14 +373,14 @@ export class BoardRenderer {
       }
     });
 
-    // 閉じるボタン
-    startBtn?.addEventListener('click', closeModal);
-    closeIconBtn?.addEventListener('click', closeModal);
+    // 開始・閉じるボタン
+    startBtn?.addEventListener('click', handleStartOrClose);
+    closeIconBtn?.addEventListener('click', handleStartOrClose);
 
-    // バックドロップクリックで閉じる
+    // バックドロップクリックで閉じる (プレイ中のみ外側クリックで閉じる)
     overlayEl.addEventListener('click', (e) => {
-      if (e.target === overlayEl) {
-        closeModal();
+      if (e.target === overlayEl && !isIdle) {
+        handleStartOrClose();
       }
     });
 
