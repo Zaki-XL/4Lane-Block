@@ -62,7 +62,7 @@ export class TimerAndControlView {
 
         <!-- アクションボタン (リセットに一本化) -->
         <div class="hud-actions">
-          <button id="reset-game-btn" class="btn btn-sm btn-outline btn-reset" title="盤面を初期化して設定・待機状態に戻す">
+          <button id="reset-game-btn" class="btn btn-reset" title="盤面を初期化して設定・待機状態に戻す">
             🔄 リセット
           </button>
         </div>
