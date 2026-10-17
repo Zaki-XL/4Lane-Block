@@ -3,7 +3,7 @@ import { BlockColor, ColorConfig } from '../core/types.js';
 import { generateRandomSalt } from '../core/prng.js';
 import { DifficultyTitles, calculateTargets } from '../core/difficulty.js';
 import { GameTimer } from '../core/timer.js';
-import { getHighScore } from '../core/storage.js';
+import { getHighScore, resetHighScore } from '../core/storage.js';
 
 /**
  * 盤面描画レンダラー
@@ -231,7 +231,10 @@ export class BoardRenderer {
               <span class="slider-end-label">10 難</span>
             </div>
             <div class="highscore-preview-row">
-              <span class="highscore-badge" id="overlay-best-badge">🏆 自己最高: <strong id="overlay-best-score">${bestScoreStr}</strong></span>
+              <span class="highscore-badge" id="overlay-best-badge">
+                🏆 自己最高 (<span id="overlay-best-config">${currentHeight}段 Lv${currentDiff}</span>): <strong id="overlay-best-score">${bestScoreStr}</strong>
+              </span>
+              <button id="overlay-reset-score-btn" class="btn btn-xs btn-outline-danger" title="この段数・難易度のハイスコアを消去">🗑️ リセット</button>
             </div>
           </div>
 
@@ -267,6 +270,8 @@ export class BoardRenderer {
     const diffText = overlayEl.querySelector('#overlay-diff-text');
     const speedText = overlayEl.querySelector('#overlay-speed-text');
     const bestScoreEl = overlayEl.querySelector('#overlay-best-score');
+    const bestConfigEl = overlayEl.querySelector('#overlay-best-config');
+    const resetScoreBtn = overlayEl.querySelector('#overlay-reset-score-btn');
     const targetMovesEl = overlayEl.querySelector('#overlay-target-moves');
     const targetTimeEl = overlayEl.querySelector('#overlay-target-time');
     const saltInput = overlayEl.querySelector('#overlay-salt-input');
@@ -285,12 +290,35 @@ export class BoardRenderer {
       }
     };
 
+    // ハイスコア表示の更新ヘルパー
+    const updateHighScorePreview = (h, lvl) => {
+      if (bestConfigEl) bestConfigEl.textContent = `${h}段 Lv${lvl}`;
+      const record = getHighScore(h, lvl);
+      if (bestScoreEl) bestScoreEl.textContent = record ? `${record.score.toLocaleString()} 点` : '---';
+    };
+
+    // 🗑️ ハイスコアリセットボタン
+    resetScoreBtn?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      // @ts-ignore
+      const h = parseInt(heightSlider?.value || String(this.engine.getState().heightLimit), 10);
+      // @ts-ignore
+      const lvl = parseInt(diffSlider?.value || String(this.engine.getState().difficultyLevel || 5), 10);
+
+      const isConfirmed = confirm(`【${h}段 Lv${lvl}】の自己最高スコアをリセットしますか？\n（この操作は元に戻せません）`);
+      if (isConfirmed) {
+        resetHighScore(h, lvl);
+        updateHighScorePreview(h, lvl);
+      }
+    });
+
     // 難易度スライダー連動
     // @ts-ignore
     diffSlider?.addEventListener('input', () => {
       // @ts-ignore
       const lvl = parseInt(diffSlider.value, 10);
-      const h = this.engine.getState().heightLimit;
+      // @ts-ignore
+      const h = parseInt(heightSlider?.value || String(this.engine.getState().heightLimit), 10);
       const t = calculateTargets(h, lvl);
       if (diffText) diffText.textContent = `Lv ${lvl} ${DifficultyTitles[lvl]}`;
       if (speedText) speedText.textContent = `(${t.secPerMove}s/手)`;
@@ -298,8 +326,7 @@ export class BoardRenderer {
       if (targetTimeEl) targetTimeEl.textContent = GameTimer.formatTime(t.targetTimeMs);
 
       // ハイスコア表示更新
-      const record = getHighScore(h, lvl);
-      if (bestScoreEl) bestScoreEl.textContent = record ? `${record.score.toLocaleString()} 点` : '---';
+      updateHighScorePreview(h, lvl);
     });
 
     // @ts-ignore
@@ -314,15 +341,15 @@ export class BoardRenderer {
     heightSlider?.addEventListener('input', () => {
       // @ts-ignore
       const h = parseInt(heightSlider.value, 10);
+      // @ts-ignore
+      const lvl = parseInt(diffSlider?.value || String(this.engine.getState().difficultyLevel || 5), 10);
       if (heightText) heightText.textContent = `${h} 段`;
-      const lvl = this.engine.getState().difficultyLevel || 5;
       const t = calculateTargets(h, lvl);
       if (targetMovesEl) targetMovesEl.textContent = `${t.targetMoves} 手`;
       if (targetTimeEl) targetTimeEl.textContent = GameTimer.formatTime(t.targetTimeMs);
 
       // 段数変更時も対応ハイスコア表示を更新
-      const record = getHighScore(h, lvl);
-      if (bestScoreEl) bestScoreEl.textContent = record ? `${record.score.toLocaleString()} 点` : '---';
+      updateHighScorePreview(h, lvl);
     });
 
     // @ts-ignore

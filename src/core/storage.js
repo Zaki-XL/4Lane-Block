@@ -172,3 +172,23 @@ export function checkAndSaveHighScore(height, level, score, moves, timeMs) {
 
   return { isNewRecord: false, previousBest: prevScore, currentScore: score };
 }
+
+/**
+ * 特定の段数・難易度のハイスコアを消去する (旧互換キーも同時クリーンアップ)
+ * @param {number} height
+ * @param {number} level
+ */
+export function resetHighScore(height, level) {
+  const all = getAllHighScores();
+  const key = getScoreKey(height, level);
+  delete all[key];
+  delete all[level]; // 旧互換キーも消去
+  saveData(HIGHSCORES_KEY, all);
+}
+
+/**
+ * 全てのハイスコアを完全に消去する
+ */
+export function resetAllHighScores() {
+  saveData(HIGHSCORES_KEY, {});
+}
