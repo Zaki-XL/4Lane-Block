@@ -151,7 +151,7 @@ export class BoardRenderer {
         const block = lane[slotIdx];
         if (block) {
           const isTop = slotIdx === lane.length - 1;
-          const blockEl = this.createBlockElement(block, isTop, isSelected && isTop);
+          const blockEl = this.createBlockElement(block, isTop, isSelected && isTop, showModal);
           slotEl.appendChild(blockEl);
         } else {
           slotEl.classList.add('slot-empty');
@@ -231,9 +231,10 @@ export class BoardRenderer {
               <span class="slider-end-label">10 難</span>
             </div>
             <div class="highscore-preview-row">
-              <span class="highscore-badge" id="overlay-best-badge">
-                🏆 自己最高 (<span id="overlay-best-config">${currentHeight}段 Lv${currentDiff}</span>): <strong id="overlay-best-score">${bestScoreStr}</strong>
-              </span>
+              <div class="highscore-badge" id="overlay-best-badge">
+                <span class="highscore-badge-title">🏆 自己最高 (<span id="overlay-best-config">${currentHeight}段 Lv${currentDiff}</span>):</span>
+                <strong class="highscore-badge-value" id="overlay-best-score">${bestScoreStr}</strong>
+              </div>
               <button id="overlay-reset-score-btn" class="btn btn-xs btn-outline-danger" title="この段数・難易度のハイスコアを消去">🗑️ リセット</button>
             </div>
           </div>
@@ -443,13 +444,27 @@ export class BoardRenderer {
    * @param {import('../core/types.js').Block} block
    * @param {boolean} isTop
    * @param {boolean} isPickedUp
+   * @param {boolean} [isScrambling=false]
    * @returns {HTMLElement}
    */
-  createBlockElement(block, isTop, isPickedUp) {
+  createBlockElement(block, isTop, isPickedUp, isScrambling = false) {
     const el = document.createElement('div');
     el.className = `block block-${block.color.toLowerCase()}`;
     el.setAttribute('data-block-id', block.id);
     el.setAttribute('data-color', block.color);
+
+    // 待機中または設定モーダル表示中の場合、初期配置特定を防ぐランダム波打ち＆色シフトアニメーションを適用
+    if (isScrambling) {
+      el.classList.add('idle-scrambling');
+      const randomDelay = (Math.random() * -4).toFixed(2);
+      const randomDur = (1.8 + Math.random() * 2.2).toFixed(2);
+      const randomOffset = ((Math.random() - 0.5) * 50).toFixed(0);
+      const randomHue = Math.floor(Math.random() * 360);
+      el.style.setProperty('--scramble-delay', `${randomDelay}s`);
+      el.style.setProperty('--scramble-dur', `${randomDur}s`);
+      el.style.setProperty('--scramble-offset', `${randomOffset}px`);
+      el.style.setProperty('--scramble-hue', `${randomHue}deg`);
+    }
 
     // 新規着地ブロックに落下アニメーションを適用
     if (this.lastDroppedBlockId === block.id) {
