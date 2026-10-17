@@ -2,6 +2,7 @@
 import { GameTimer } from '../core/timer.js';
 import { GameEngine } from '../core/game_engine.js';
 import { generateRandomSalt } from '../core/prng.js';
+import { DifficultyTitles, calculateTargets } from '../core/difficulty.js';
 
 /**
  * タイマーおよびコントロールパネルのUIビュー
@@ -23,7 +24,11 @@ export class TimerAndControlView {
    * UIの描画
    */
   render() {
-    const currentHeight = this.engine.getState().heightLimit;
+    const state = this.engine.getState();
+    const currentHeight = state.heightLimit;
+    const currentDiff = state.difficultyLevel || 5;
+    const targets = calculateTargets(currentHeight, currentDiff);
+
     const heightOptions = Array.from({ length: 13 }, (_, i) => i + 3) // 3〜15
       .map((h) => `<option value="${h}" ${h === currentHeight ? 'selected' : ''}>${h}段</option>`)
       .join('');
@@ -53,6 +58,26 @@ export class TimerAndControlView {
           </div>
         </div>
       </div>
+      
+      <!-- 難易度スライダー & 目標情報パネル -->
+      <div class="difficulty-panel">
+        <div class="difficulty-header">
+          <span class="diff-title-label">
+            DIFFICULTY: <strong id="diff-level-text">Lv ${currentDiff}</strong>
+            <span class="diff-title-desc" id="diff-title-desc">${DifficultyTitles[currentDiff]}</span>
+          </span>
+          <span class="diff-target-badge" id="diff-target-badge">
+            🎯 目標: <strong id="target-moves-text">${targets.targetMoves}手</strong> / <strong id="target-time-text">${GameTimer.formatTime(targets.targetTimeMs)}</strong>
+            <small>(${targets.secPerMove}s/手)</small>
+          </span>
+        </div>
+        <div class="slider-wrapper">
+          <span class="slider-end-label">Lv1 初心</span>
+          <input type="range" id="difficulty-slider" class="difficulty-slider" min="1" max="10" step="1" value="${currentDiff}" title="難易度を変更 (1〜10)" />
+          <span class="slider-end-label">Lv10 神話</span>
+        </div>
+      </div>
+
       <div class="actions-panel">
         <button id="new-game-btn" class="btn btn-primary">🎲 新規ゲーム (新ソルト)</button>
         <button id="reset-game-btn" class="btn btn-outline">🔄 リトライ (初期状態)</button>
@@ -63,6 +88,12 @@ export class TimerAndControlView {
     this.movesDisplay = this.element.querySelector('#moves-display');
     this.heightSelect = /** @type {HTMLSelectElement} */ (this.element.querySelector('#height-select'));
     this.saltInput = /** @type {HTMLInputElement} */ (this.element.querySelector('#salt-input'));
+    this.difficultySlider = /** @type {HTMLInputElement} */ (this.element.querySelector('#difficulty-slider'));
+    this.diffLevelText = this.element.querySelector('#diff-level-text');
+    this.diffTitleDesc = this.element.querySelector('#diff-title-desc');
+    this.targetMovesText = this.element.querySelector('#target-moves-text');
+    this.targetTimeText = this.element.querySelector('#target-time-text');
+    this.diffTargetBadge = this.element.querySelector('#diff-target-badge');
   }
 
   /**
@@ -87,9 +118,30 @@ export class TimerAndControlView {
       if (this.heightSelect && Number(this.heightSelect.value) !== state.heightLimit) {
         this.heightSelect.value = String(state.heightLimit);
       }
+      if (this.difficultySlider && Number(this.difficultySlider.value) !== state.difficultyLevel) {
+        this.difficultySlider.value = String(state.difficultyLevel);
+      }
       if (state.timerStatus === 'idle' && this.timerDisplay) {
         this.timerDisplay.textContent = GameTimer.formatTime(state.elapsedTime);
       }
+
+      // 目標表示の更新
+      const currentDiff = state.difficultyLevel || 5;
+      const targets = calculateTargets(state.heightLimit, currentDiff);
+      if (this.diffLevelText) this.diffLevelText.textContent = `Lv ${currentDiff}`;
+      if (this.diffTitleDesc) this.diffTitleDesc.textContent = DifficultyTitles[currentDiff];
+      if (this.targetMovesText) this.targetMovesText.textContent = `${targets.targetMoves}手`;
+      if (this.targetTimeText) this.targetTimeText.textContent = GameTimer.formatTime(targets.targetTimeMs);
+      if (this.diffTargetBadge) {
+        const small = this.diffTargetBadge.querySelector('small');
+        if (small) small.textContent = `(${targets.secPerMove}s/手)`;
+      }
+    });
+
+    // 難易度スライダー変更時
+    this.difficultySlider?.addEventListener('input', () => {
+      const level = parseInt(this.difficultySlider.value, 10);
+      this.engine.setDifficultyLevel(level);
     });
 
     // 高さセレクト変更時

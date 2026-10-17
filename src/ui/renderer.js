@@ -8,9 +8,11 @@ import { BlockColor, ColorConfig } from '../core/types.js';
 export class BoardRenderer {
   /**
    * @param {HTMLElement} containerElement - 盤面を描画する親コンテナ
+   * @param {() => void} [onStart] - ゲーム開始リクエストコールバック
    */
-  constructor(containerElement) {
+  constructor(containerElement, onStart) {
     this.container = containerElement;
+    this.onStart = onStart;
     this.focusedLaneIndex = 0;
     this.currentHeightLimit = 10;
     /** @type {string | null} */
@@ -35,32 +37,26 @@ export class BoardRenderer {
   updateViewportFit(heightLimit) {
     this.currentHeightLimit = heightLimit;
 
-    // ヘッダーやコントロールパネル、操作説明、余白の総高さを動的に取得
     const header = document.querySelector('.header');
     const controls = document.querySelector('#controls');
     const instructions = document.querySelector('.instructions-panel');
 
     const headerH = header ? header.getBoundingClientRect().height : 60;
-    const controlsH = controls ? controls.getBoundingClientRect().height : 120;
+    const controlsH = controls ? controls.getBoundingClientRect().height : 140;
     const instructionsH = instructions ? instructions.getBoundingClientRect().height : 50;
-    const appPadding = 32; // 上下マージン・パディング
-    const laneHeaderBaseH = 48; // 各レーンの番号ヘッダー(24px) + 底面ベース(10px) + 余白
+    const appPadding = 24;
+    const laneHeaderBaseH = 40;
 
     const windowH = window.innerHeight;
     const overhead = headerH + controlsH + instructionsH + appPadding + laneHeaderBaseH;
 
-    // レーンのスロットエリアに利用可能な最大縦幅
     const availableH = Math.max(100, windowH - overhead);
-
-    // スロット間ギャップ (4px) を考慮した1スロットあたりの高さ
-    const gapTotal = (heightLimit - 1) * 4;
+    const gapTotal = (heightLimit - 1) * 3;
     const rawSlotH = Math.floor((availableH - gapTotal) / heightLimit);
 
-    // 最小16px、最大52pxの範囲にクランプ
     const optimalSlotH = Math.max(16, Math.min(52, rawSlotH));
-    const optimalFontSize = Math.max(9, Math.min(14, Math.floor(optimalSlotH * 0.42)));
+    const optimalFontSize = Math.max(8, Math.min(13, Math.floor(optimalSlotH * 0.42)));
 
-    // ルート要素またはコンテナへCSS変数を設定
     document.documentElement.style.setProperty('--slot-height', `${optimalSlotH}px`);
     document.documentElement.style.setProperty('--block-font-size', `${optimalFontSize}px`);
     document.documentElement.style.setProperty('--height-limit', `${heightLimit}`);
@@ -87,10 +83,14 @@ export class BoardRenderer {
    * @param {import('../core/types.js').GameState} state
    */
   render(state) {
-    // 描画前に1画面フィット計算を実行
     this.updateViewportFit(state.heightLimit);
-
     this.container.innerHTML = '';
+
+    const isIdle = state.timerStatus === 'idle';
+
+    // 4レーンを内包するラッパー
+    const lanesWrapper = document.createElement('div');
+    lanesWrapper.className = `lanes-wrapper ${isIdle ? 'board-blurred' : ''}`;
 
     for (let laneIdx = 0; laneIdx < 4; laneIdx++) {
       const lane = state.lanes[laneIdx];
@@ -137,7 +137,33 @@ export class BoardRenderer {
       baseEl.className = 'lane-base';
       laneEl.appendChild(baseEl);
 
-      this.container.appendChild(laneEl);
+      lanesWrapper.appendChild(laneEl);
+    }
+
+    this.container.appendChild(lanesWrapper);
+
+    // 開始前 (idle) の場合はぼかし解除用のスタートオーバーレイを表示
+    if (isIdle) {
+      const overlayEl = document.createElement('div');
+      overlayEl.className = 'start-overlay';
+      overlayEl.innerHTML = `
+        <div class="start-overlay-card">
+          <div class="start-overlay-icon">🔒</div>
+          <h3 class="start-overlay-title">盤面保護中 (待機状態)</h3>
+          <p class="start-overlay-desc">開始すると盤面がオープンされ、タイマー計測が始まります</p>
+          <button class="btn btn-primary start-overlay-btn" id="start-overlay-btn">▶ ゲーム開始 (盤面を開く)</button>
+        </div>
+      `;
+
+      // クリックでゲーム開始
+      overlayEl.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (this.onStart) {
+          this.onStart();
+        }
+      });
+
+      this.container.appendChild(overlayEl);
     }
   }
 

@@ -31,7 +31,9 @@ function initApp() {
   }
 
   // 3. UIレンダラーとビューの初期化
-  const renderer = new BoardRenderer(boardEl);
+  const renderer = new BoardRenderer(boardEl, () => {
+    engine.start();
+  });
   new TimerAndControlView(engine, controlEl);
   new GameClearModal(engine, modalContainerEl);
 

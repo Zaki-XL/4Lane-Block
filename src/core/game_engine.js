@@ -14,6 +14,8 @@ export class GameEngine {
   constructor(heightLimit = 10) {
     /** @type {number} */
     this.heightLimit = heightLimit;
+    /** @type {number} */
+    this.difficultyLevel = 5; // 難易度レベル (1〜10、デフォルト: 5)
     /** @type {string} */
     this.salt = '';
     /** @type {[import('./types.js').Lane, import('./types.js').Lane, import('./types.js').Lane, import('./types.js').Lane]} */
@@ -53,6 +55,8 @@ export class GameEngine {
     return {
       salt: this.salt,
       heightLimit: this.heightLimit,
+      // @ts-ignore
+      difficultyLevel: this.difficultyLevel,
       // @ts-ignore
       lanes: this.lanes.map((lane) => [...lane]),
       selectedLaneIndex: this.selectedLaneIndex,
@@ -111,6 +115,23 @@ export class GameEngine {
     this.heightLimit = clamped;
     const newSalt = generateRandomSalt(this.heightLimit);
     this.loadFromSalt(newSalt);
+  }
+
+  /**
+   * 難易度レベルを設定する (1〜10)
+   * @param {number} level
+   */
+  setDifficultyLevel(level) {
+    this.difficultyLevel = Math.max(1, Math.min(10, Math.floor(level)));
+    this.emit('stateChange', this.getState());
+  }
+
+  /**
+   * 現在の難易度レベルを取得
+   * @returns {number}
+   */
+  getDifficultyLevel() {
+    return this.difficultyLevel;
   }
 
   /**
@@ -210,7 +231,9 @@ export class GameEngine {
       this.emit('gameClear', {
         moveCount: this.moveCount,
         elapsedTime: clearTime,
-        salt: this.salt
+        salt: this.salt,
+        difficultyLevel: this.difficultyLevel,
+        heightLimit: this.heightLimit
       });
     } else {
       this.emit('stateChange', this.getState());
@@ -270,7 +293,9 @@ export class GameEngine {
       this.emit('gameClear', {
         moveCount: this.moveCount,
         elapsedTime: clearTime,
-        salt: this.salt
+        salt: this.salt,
+        difficultyLevel: this.difficultyLevel,
+        heightLimit: this.heightLimit
       });
     } else {
       this.emit('stateChange', this.getState());
