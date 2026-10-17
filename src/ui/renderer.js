@@ -188,7 +188,7 @@ export class BoardRenderer {
     const currentHeight = state.heightLimit;
     const currentDiff = state.difficultyLevel || 5;
     const targets = calculateTargets(currentHeight, currentDiff);
-    const bestRecord = getHighScore(currentDiff);
+    const bestRecord = getHighScore(currentHeight, currentDiff);
     const bestScoreStr = bestRecord ? `${bestRecord.score.toLocaleString()} 点` : '---';
 
     const overlayEl = document.createElement('div');
@@ -298,7 +298,7 @@ export class BoardRenderer {
       if (targetTimeEl) targetTimeEl.textContent = GameTimer.formatTime(t.targetTimeMs);
 
       // ハイスコア表示更新
-      const record = getHighScore(lvl);
+      const record = getHighScore(h, lvl);
       if (bestScoreEl) bestScoreEl.textContent = record ? `${record.score.toLocaleString()} 点` : '---';
     });
 
@@ -319,6 +319,10 @@ export class BoardRenderer {
       const t = calculateTargets(h, lvl);
       if (targetMovesEl) targetMovesEl.textContent = `${t.targetMoves} 手`;
       if (targetTimeEl) targetTimeEl.textContent = GameTimer.formatTime(t.targetTimeMs);
+
+      // 段数変更時も対応ハイスコア表示を更新
+      const record = getHighScore(h, lvl);
+      if (bestScoreEl) bestScoreEl.textContent = record ? `${record.score.toLocaleString()} 点` : '---';
     });
 
     // @ts-ignore

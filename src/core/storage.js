@@ -104,41 +104,66 @@ export function saveSettings(settings) {
 }
 
 /**
- * 全レベルのハイスコアマップを取得
- * @returns {Record<number, { score: number, moves: number, timeMs: number, date: string }>}
+ * 段数と難易度の組み合わせキーを生成
+ * @param {number} height
+ * @param {number} level
+ * @returns {string}
+ */
+export function getScoreKey(height, level) {
+  const h = Math.max(3, Math.min(15, Math.floor(height || 10)));
+  const d = Math.max(1, Math.min(10, Math.floor(level || 5)));
+  return `h${h}_d${d}`;
+}
+
+/**
+ * 全てのハイスコアマップを取得
+ * @returns {Record<string, { score: number, moves: number, timeMs: number, date: string, height: number, level: number }>}
  */
 export function getAllHighScores() {
   return loadData(HIGHSCORES_KEY) || {};
 }
 
 /**
- * 指定レベルのハイスコアを取得
+ * 指定段数・指定難易度のハイスコアを取得
+ * @param {number} height (3〜15)
  * @param {number} level (1〜10)
- * @returns {{ score: number, moves: number, timeMs: number, date: string } | null}
+ * @returns {{ score: number, moves: number, timeMs: number, date: string, height: number, level: number } | null}
  */
-export function getHighScore(level) {
+export function getHighScore(height, level) {
   const all = getAllHighScores();
-  return all[level] || null;
+  const key = getScoreKey(height, level);
+  if (all[key]) {
+    return all[key];
+  }
+  // 後方互換フォールバック: 旧来の難易度単体キー (level) があれば参照
+  if (all[level]) {
+    return all[level];
+  }
+  return null;
 }
 
 /**
- * 新しい記録を判定・保存する
+ * 指定段数・難易度での新しい記録を判定・保存する
+ * @param {number} height
  * @param {number} level
  * @param {number} score
  * @param {number} moves
  * @param {number} timeMs
  * @returns {{ isNewRecord: boolean, previousBest: number, currentScore: number }}
  */
-export function checkAndSaveHighScore(level, score, moves, timeMs) {
+export function checkAndSaveHighScore(height, level, score, moves, timeMs) {
   const all = getAllHighScores();
-  const prev = all[level];
+  const key = getScoreKey(height, level);
+  const prev = all[key] || all[level]; // 旧データも比較対象
   const prevScore = prev ? prev.score : 0;
 
   if (score > prevScore) {
-    all[level] = {
+    all[key] = {
       score,
       moves,
       timeMs,
+      height,
+      level,
       date: new Date().toISOString()
     };
     saveData(HIGHSCORES_KEY, all);

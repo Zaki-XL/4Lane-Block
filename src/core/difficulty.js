@@ -60,7 +60,8 @@ export function calculateTargets(heightLimit, difficultyLevel) {
 
 /**
  * 手数・タイム・難易度・段数を組み合わせた総合スコアを算出する
- * 難易度係数 C(D) に二次加速モデルを適用し、高難易度ほど圧倒的なハイスコアとなる
+ * 難易度係数 C(D) および段数スケーリング係数 M(H) に加速モデルを適用し、
+ * 高段数・高難易度ほど飛躍的に高いハイスコアが獲得できるようにする
  * @param {number} actualMoves - 実際の手数
  * @param {number} actualTimeMs - 実際の経過時間 (ms)
  * @param {number} heightLimit - レーン高さ (3〜15)
@@ -70,13 +71,19 @@ export function calculateTargets(heightLimit, difficultyLevel) {
  *   score: number;
  *   baseScore: number;
  *   diffMultiplier: number;
+ *   heightMultiplier: number;
  *   efficiency: number;
  *   rankBonus: number;
  * }}
  */
 export function calculateScore(actualMoves, actualTimeMs, heightLimit, difficultyLevel, rank) {
   const { targetMoves, targetTimeMs } = calculateTargets(heightLimit, difficultyLevel);
-  const baseScore = heightLimit * 1000;
+  const h = Math.max(3, Math.min(15, Math.floor(heightLimit)));
+  
+  // 段数スケーリング係数 M(H): 3段をベース(約0.5)とし、10段(1.0)、15段(約1.85)と二次加速的に増大
+  // 3×H 個のブロックを整理する思考コスト・探索空間の爆発に報いる設計
+  const heightMultiplier = Number((0.5 + Math.pow((h - 3) / 7, 1.4) * 0.5 + (h > 10 ? (h - 10) * 0.17 : 0)).toFixed(2));
+  const baseScore = Math.round(h * 1000 * heightMultiplier);
 
   // 手数・タイムの効率ファクター (目標より優れているほど 1.0 を超えて加点、下限 0.2, 上限 2.5)
   const actualTimeSec = Math.max(0.5, actualTimeMs / 1000);
@@ -89,11 +96,12 @@ export function calculateScore(actualMoves, actualTimeMs, heightLimit, difficult
   const d = Math.max(1, Math.min(10, Math.floor(difficultyLevel)));
   const diffMultiplier = Number((1 + (d - 1) * 0.6 + Math.pow(d - 1, 2) * 0.3).toFixed(2));
 
-  // ランクボーナス加点
+  // ランクボーナス加点 (段数倍率を加味し、高段数でのSランククリアに莫大なボーナス)
+  const rankHeightScale = Math.max(0.6, h / 10);
   let rankBonus = 0;
-  if (rank === 'S') rankBonus = 15000;
-  else if (rank === 'A') rankBonus = 7500;
-  else if (rank === 'B') rankBonus = 2500;
+  if (rank === 'S') rankBonus = Math.round(15000 * rankHeightScale);
+  else if (rank === 'A') rankBonus = Math.round(7500 * rankHeightScale);
+  else if (rank === 'B') rankBonus = Math.round(2500 * rankHeightScale);
 
   const rawScore = baseScore * efficiency * diffMultiplier + rankBonus;
   const score = Math.max(100, Math.round(rawScore));
@@ -102,6 +110,7 @@ export function calculateScore(actualMoves, actualTimeMs, heightLimit, difficult
     score,
     baseScore,
     diffMultiplier,
+    heightMultiplier,
     efficiency: Number(efficiency.toFixed(2)),
     rankBonus
   };
@@ -178,6 +187,7 @@ export function evaluateResult(actualMoves, actualTimeMs, heightLimit, difficult
     scoreBreakdown: {
       baseScore: scoreInfo.baseScore,
       diffMultiplier: scoreInfo.diffMultiplier,
+      heightMultiplier: scoreInfo.heightMultiplier,
       efficiency: scoreInfo.efficiency,
       rankBonus: scoreInfo.rankBonus
     }

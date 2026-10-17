@@ -139,10 +139,17 @@ export class GameEngine {
   }
 
   /**
-   * 同一ソルトの初期状態にリセットする
+   * 盤面をリセットする
+   * デフォルトでは現在の段数を維持したまま新しいランダムソルトを生成して盤面を再構築する
+   * @param {boolean} [randomizeSalt=true] trueなら新規ランダムソルト、falseなら同一ソルトでやり直し
    */
-  reset() {
-    this.loadFromSalt(this.salt);
+  reset(randomizeSalt = true) {
+    if (randomizeSalt) {
+      const newSalt = generateRandomSalt(this.heightLimit);
+      this.loadFromSalt(newSalt);
+    } else {
+      this.loadFromSalt(this.salt);
+    }
   }
 
   /**

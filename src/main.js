@@ -1,12 +1,12 @@
 // @ts-check
-import { GameEngine } from './core/game_engine.js?v=2.5';
-import { getSavedSettings } from './core/storage.js?v=2.5';
-import { BoardRenderer } from './ui/renderer.js?v=2.5';
-import { TimerAndControlView } from './ui/timer_view.js?v=2.5';
-import { GameClearModal } from './ui/modal.js?v=2.5';
-import { ClickInputController } from './controllers/click_controller.js?v=2.5';
-import { DragDropInputController } from './controllers/drag_drop_controller.js?v=2.5';
-import { KeyboardInputController } from './controllers/keyboard_controller.js?v=2.5';
+import { GameEngine } from './core/game_engine.js?v=2.6';
+import { getSavedSettings } from './core/storage.js?v=2.6';
+import { BoardRenderer } from './ui/renderer.js?v=2.6';
+import { TimerAndControlView } from './ui/timer_view.js?v=2.6';
+import { GameClearModal } from './ui/modal.js?v=2.6';
+import { ClickInputController } from './controllers/click_controller.js?v=2.6';
+import { DragDropInputController } from './controllers/drag_drop_controller.js?v=2.6';
+import { KeyboardInputController } from './controllers/keyboard_controller.js?v=2.6';
 
 /**
  * アプリケーションの初期化

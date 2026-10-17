@@ -31,7 +31,7 @@ export class TimerAndControlView {
 
     this.element.innerHTML = `
       <div class="hud-container">
-        <!-- メイン統計 (大きく強調) -->
+        <!-- 左側：メイン統計 (TIME & MOVES: 固定幅・等幅数字) -->
         <div class="hud-primary-stats">
           <div class="stat-card stat-time-card">
             <span class="stat-label">TIME</span>
@@ -43,7 +43,7 @@ export class TimerAndControlView {
           </div>
         </div>
 
-        <!-- サブ情報 (目標 & 設定バッジ: 小さく整理) -->
+        <!-- 中央：サブ目標情報 -->
         <div class="hud-secondary-stats">
           <div class="hud-meta-row">
             <div class="meta-item target-meta" id="hud-target-text">
@@ -60,12 +60,12 @@ export class TimerAndControlView {
           </div>
         </div>
 
-        <!-- アクションボタン (リセット & 設定) -->
+        <!-- 右側：アクションボタン (リセット & 設定) -->
         <div class="hud-actions">
-          <button id="reset-game-btn" class="btn btn-reset" title="盤面を初期状態にリセットして即座に開始">
+          <button id="reset-game-btn" class="btn btn-reset" title="新規ランダムソルトで再構築">
             🔄 リセット
           </button>
-          <button id="open-settings-btn" class="btn btn-secondary btn-settings" title="段数・難易度・ソルトの設定を開く">
+          <button id="open-settings-btn" class="btn btn-secondary btn-settings" title="ゲーム設定を開く">
             ⚙️ 設定
           </button>
         </div>
@@ -116,10 +116,11 @@ export class TimerAndControlView {
       }
     });
 
-    // 🔄 リセットボタン (盤面を初期状態に戻し、即座に次のプレイを開始可能にする)
+    // 🔄 リセットボタン (新規ランダムソルトで盤面を再構築し、URLも最新化)
     const resetGameBtn = this.element.querySelector('#reset-game-btn');
     resetGameBtn?.addEventListener('click', () => {
-      this.engine.reset();
+      this.engine.reset(true);
+      this.updateUrlParam(this.engine.getCurrentSalt());
     });
 
     // ⚙️ 設定ボタン (段数・難易度・ソルトのモーダルを開く)

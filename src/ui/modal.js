@@ -258,8 +258,8 @@ export class GameClearModal {
 
     const evaluation = evaluateResult(result.moveCount, result.elapsedTime, height, diffLevel);
 
-    // ハイスコア判定と Cookie 永続化
-    const saveRes = checkAndSaveHighScore(diffLevel, evaluation.score, result.moveCount, result.elapsedTime);
+    // ハイスコア判定と Cookie 永続化 (段数×難易度の組み合わせ保存)
+    const saveRes = checkAndSaveHighScore(height, diffLevel, evaluation.score, result.moveCount, result.elapsedTime);
 
     // 紙吹雪発射！ (高速版)
     this.confetti.fire(85, evaluation.rank === 'S');

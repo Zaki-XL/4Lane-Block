@@ -68,11 +68,11 @@ body {
 /* コントロール・ステータスパネル (スマートHUD) */
 .control-container {
   width: 100%;
-  max-width: 620px;
+  max-width: 680px;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  padding: 5px 10px;
+  padding: 5px 12px;
   margin-bottom: 6px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
   flex-shrink: 0;
@@ -82,44 +82,61 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 10px;
 }
 
-/* メイン情報 (TIMEとMOVESを特大強調) */
+/* メイン情報 (TIMEとMOVESを特大強調・幅固定でレイアウトズレ防止) */
 .hud-primary-stats {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .stat-time-card {
-  min-width: 95px;
+  width: 116px;
+  min-width: 116px;
+  max-width: 116px;
   background: rgba(15, 23, 42, 0.85);
   border: 1px solid rgba(56, 189, 248, 0.4);
   box-shadow: 0 0 12px rgba(56, 189, 248, 0.15);
   padding: 3px 6px;
+  flex-shrink: 0;
+  box-sizing: border-box;
 }
 
 .stat-moves-card {
-  min-width: 65px;
+  width: 74px;
+  min-width: 74px;
+  max-width: 74px;
   background: rgba(15, 23, 42, 0.85);
   border: 1px solid rgba(251, 191, 36, 0.35);
   box-shadow: 0 0 10px rgba(251, 191, 36, 0.12);
   padding: 3px 6px;
+  flex-shrink: 0;
+  box-sizing: border-box;
 }
 
 .stat-value.time-value {
   font-size: 1.35rem;
   font-weight: 900;
   color: #38bdf8;
-  letter-spacing: -0.5px;
+  font-family: 'Consolas', 'Menlo', 'Monaco', 'Courier New', monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.5px;
   text-shadow: 0 0 10px rgba(56, 189, 248, 0.6);
+  white-space: nowrap;
+  display: block;
 }
 
 .stat-value.moves-value {
   font-size: 1.2rem;
   font-weight: 800;
   color: #fbbf24;
+  font-family: 'Consolas', 'Menlo', 'Monaco', 'Courier New', monospace;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  display: block;
 }
 
 /* サブ情報 (目標と設定バッジ: 小さく整理) */
@@ -128,7 +145,8 @@ body {
   flex-direction: column;
   gap: 2px;
   flex: 1;
-  min-width: 110px;
+  min-width: 120px;
+  overflow: hidden;
 }
 
 .hud-meta-row {
@@ -139,12 +157,16 @@ body {
 
 .meta-item.target-meta {
   font-size: 0.7rem;
-  font-family: monospace;
+  font-family: 'Consolas', 'Menlo', 'Monaco', 'Courier New', monospace;
+  font-variant-numeric: tabular-nums;
   color: var(--text-muted);
+  white-space: nowrap;
 }
 
 .meta-item.target-meta strong {
   color: #34d399;
+  font-variant-numeric: tabular-nums;
+  display: inline-block;
 }
 
 .meta-label {
