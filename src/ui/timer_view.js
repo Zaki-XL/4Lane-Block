@@ -31,23 +31,27 @@ export class TimerAndControlView {
 
     this.element.innerHTML = `
       <div class="hud-container">
-        <div class="hud-stats">
-          <div class="stat-card">
+        <!-- メイン統計 (大きく強調) -->
+        <div class="hud-primary-stats">
+          <div class="stat-card stat-time-card">
             <span class="stat-label">TIME</span>
-            <span class="stat-value" id="timer-display">00:00.00</span>
+            <span class="stat-value time-value" id="timer-display">00:00.00</span>
           </div>
-          <div class="stat-card">
+          <div class="stat-card stat-moves-card">
             <span class="stat-label">MOVES</span>
-            <span class="stat-value" id="moves-display">0 手</span>
+            <span class="stat-value moves-value" id="moves-display">0 手</span>
           </div>
-          <div class="stat-card stat-target-card">
-            <span class="stat-label">TARGET 🎯</span>
-            <span class="stat-target-val" id="hud-target-text">
+        </div>
+
+        <!-- サブ情報 (目標 & 設定バッジ: 小さく整理) -->
+        <div class="hud-secondary-stats">
+          <div class="hud-meta-row">
+            <div class="meta-item target-meta" id="hud-target-text">
+              <span class="meta-label">TARGET:</span>
               <strong id="target-moves-text">${targets.targetMoves}手</strong> / <strong id="target-time-text">${GameTimer.formatTime(targets.targetTimeMs)}</strong>
-            </span>
+            </div>
           </div>
-          <div class="stat-card stat-config-card">
-            <span class="stat-label">CONFIG ⚙️</span>
+          <div class="hud-meta-row">
             <div class="config-summary-badges">
               <span class="config-pill" id="hud-height-pill">${currentHeight}段</span>
               <span class="config-pill" id="hud-diff-pill">Lv${currentDiff} ${DifficultyTitles[currentDiff]?.split(' ')[0]}</span>
@@ -56,9 +60,11 @@ export class TimerAndControlView {
           </div>
         </div>
 
+        <!-- アクションボタン (リセットに一本化) -->
         <div class="hud-actions">
-          <button id="reset-game-btn" class="btn btn-sm btn-outline" title="初期状態からやり直す">🔄 リトライ</button>
-          <button id="open-config-btn" class="btn btn-sm btn-secondary" title="難易度・段数・ソルトを変更して新ゲーム">⚙ 設定・新規</button>
+          <button id="reset-game-btn" class="btn btn-sm btn-outline btn-reset" title="盤面を初期化して設定・待機状態に戻す">
+            🔄 リセット
+          </button>
         </div>
       </div>
     `;
@@ -107,15 +113,9 @@ export class TimerAndControlView {
       }
     });
 
-    // リセットボタン (現在の盤面をリトライし、待機状態にする)
+    // 🔄 リセットボタン (盤面を初期状態に戻し、待機中設定コンソールを開く)
     const resetGameBtn = this.element.querySelector('#reset-game-btn');
     resetGameBtn?.addEventListener('click', () => {
-      this.engine.reset();
-    });
-
-    // ⚙ 設定・新規ボタン (待機状態に戻して設定コンソールを開く)
-    const openConfigBtn = this.element.querySelector('#open-config-btn');
-    openConfigBtn?.addEventListener('click', () => {
       this.engine.reset();
     });
 
@@ -137,6 +137,7 @@ export class TimerAndControlView {
       }
     });
   }
+
 
   /**
    * ブラウザURLのクエリパラメータを更新する

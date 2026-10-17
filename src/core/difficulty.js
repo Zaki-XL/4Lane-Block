@@ -59,6 +59,55 @@ export function calculateTargets(heightLimit, difficultyLevel) {
 }
 
 /**
+ * 手数・タイム・難易度・段数を組み合わせた総合スコアを算出する
+ * 難易度係数 C(D) に二次加速モデルを適用し、高難易度ほど圧倒的なハイスコアとなる
+ * @param {number} actualMoves - 実際の手数
+ * @param {number} actualTimeMs - 実際の経過時間 (ms)
+ * @param {number} heightLimit - レーン高さ (3〜15)
+ * @param {number} difficultyLevel - 難易度レベル (1〜10)
+ * @param {'S' | 'A' | 'B' | 'C'} rank - 評価ランク
+ * @returns {{
+ *   score: number;
+ *   baseScore: number;
+ *   diffMultiplier: number;
+ *   efficiency: number;
+ *   rankBonus: number;
+ * }}
+ */
+export function calculateScore(actualMoves, actualTimeMs, heightLimit, difficultyLevel, rank) {
+  const { targetMoves, targetTimeMs } = calculateTargets(heightLimit, difficultyLevel);
+  const baseScore = heightLimit * 1000;
+
+  // 手数・タイムの効率ファクター (目標より優れているほど 1.0 を超えて加点、下限 0.2, 上限 2.5)
+  const actualTimeSec = Math.max(0.5, actualTimeMs / 1000);
+  const targetTimeSec = targetTimeMs / 1000;
+  const movesFactor = Math.min(2.5, Math.max(0.2, targetMoves / Math.max(1, actualMoves)));
+  const timeFactor = Math.min(2.5, Math.max(0.2, targetTimeSec / actualTimeSec));
+  const efficiency = movesFactor * 0.6 + timeFactor * 0.4;
+
+  // 難易度スケーリング係数 (二次加速モデル: 高難易度に挑むリスクに圧倒的スコアで報いる)
+  const d = Math.max(1, Math.min(10, Math.floor(difficultyLevel)));
+  const diffMultiplier = Number((1 + (d - 1) * 0.6 + Math.pow(d - 1, 2) * 0.3).toFixed(2));
+
+  // ランクボーナス加点
+  let rankBonus = 0;
+  if (rank === 'S') rankBonus = 15000;
+  else if (rank === 'A') rankBonus = 7500;
+  else if (rank === 'B') rankBonus = 2500;
+
+  const rawScore = baseScore * efficiency * diffMultiplier + rankBonus;
+  const score = Math.max(100, Math.round(rawScore));
+
+  return {
+    score,
+    baseScore,
+    diffMultiplier,
+    efficiency: Number(efficiency.toFixed(2)),
+    rankBonus
+  };
+}
+
+/**
  * リザルトの総合評価判定
  * @param {number} actualMoves - 実際の手数
  * @param {number} actualTimeMs - 実際の経過時間 (ms)
@@ -72,6 +121,13 @@ export function calculateTargets(heightLimit, difficultyLevel) {
  *   isTimeAchieved: boolean;
  *   targetMoves: number;
  *   targetTimeMs: number;
+ *   score: number;
+ *   scoreBreakdown: {
+ *     baseScore: number;
+ *     diffMultiplier: number;
+ *     efficiency: number;
+ *     rankBonus: number;
+ *   };
  * }}
  */
 export function evaluateResult(actualMoves, actualTimeMs, heightLimit, difficultyLevel) {
@@ -107,13 +163,24 @@ export function evaluateResult(actualMoves, actualTimeMs, heightLimit, difficult
     }
   }
 
+  const typedRank = /** @type {'S' | 'A' | 'B' | 'C'} */ (rank);
+  const scoreInfo = calculateScore(actualMoves, actualTimeMs, heightLimit, difficultyLevel, typedRank);
+
   return {
-    rank: /** @type {'S' | 'A' | 'B' | 'C'} */ (rank),
+    rank: typedRank,
     stars,
     title,
     isMovesAchieved,
     isTimeAchieved,
     targetMoves,
-    targetTimeMs
+    targetTimeMs,
+    score: scoreInfo.score,
+    scoreBreakdown: {
+      baseScore: scoreInfo.baseScore,
+      diffMultiplier: scoreInfo.diffMultiplier,
+      efficiency: scoreInfo.efficiency,
+      rankBonus: scoreInfo.rankBonus
+    }
   };
 }
+

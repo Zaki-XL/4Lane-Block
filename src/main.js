@@ -1,5 +1,6 @@
 // @ts-check
 import { GameEngine } from './core/game_engine.js';
+import { getSavedSettings } from './core/storage.js';
 import { BoardRenderer } from './ui/renderer.js';
 import { TimerAndControlView } from './ui/timer_view.js';
 import { GameClearModal } from './ui/modal.js';
@@ -20,8 +21,10 @@ function initApp() {
     return;
   }
 
-  // 1. コアエンジンのインスタンス化 (デフォルト高さ: 10)
-  const engine = new GameEngine(10);
+  // 1. Cookieから前回設定を取得してコアエンジンのインスタンス化
+  const savedSettings = getSavedSettings();
+  const engine = new GameEngine(savedSettings.height);
+  engine.setDifficultyLevel(savedSettings.difficultyLevel);
 
   // 2. URLクエリパラメータからソルト取得 (共有URL対応)
   const urlParams = new URLSearchParams(window.location.search);
@@ -29,6 +32,7 @@ function initApp() {
   if (initialSalt) {
     engine.loadFromSalt(initialSalt);
   }
+
 
   // 3. UIレンダラーとビューの初期化
   const renderer = new BoardRenderer(boardEl, engine);

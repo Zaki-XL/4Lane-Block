@@ -2,6 +2,7 @@
 import { BlockColor } from './types.js';
 import { hashString, Mulberry32, generateRandomSalt, decodeObfuscatedSalt, encodeObfuscatedSalt } from './prng.js';
 import { GameTimer } from './timer.js';
+import { saveSettings } from './storage.js';
 
 /**
  * 4Lane Block コアゲームエンジン
@@ -113,6 +114,7 @@ export class GameEngine {
   setHeightLimit(newHeight) {
     const clamped = Math.max(3, Math.min(15, Math.floor(newHeight)));
     this.heightLimit = clamped;
+    saveSettings({ height: clamped });
     const newSalt = generateRandomSalt(this.heightLimit);
     this.loadFromSalt(newSalt);
   }
@@ -123,8 +125,10 @@ export class GameEngine {
    */
   setDifficultyLevel(level) {
     this.difficultyLevel = Math.max(1, Math.min(10, Math.floor(level)));
+    saveSettings({ difficultyLevel: this.difficultyLevel });
     this.emit('stateChange', this.getState());
   }
+
 
   /**
    * 現在の難易度レベルを取得

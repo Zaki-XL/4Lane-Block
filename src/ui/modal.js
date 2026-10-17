@@ -3,9 +3,10 @@ import { GameTimer } from '../core/timer.js';
 import { GameEngine } from '../core/game_engine.js';
 import { generateRandomSalt } from '../core/prng.js';
 import { evaluateResult, DifficultyTitles } from '../core/difficulty.js';
+import { checkAndSaveHighScore, getHighScore } from '../core/storage.js';
 
 /**
- * 自前軽量 Canvas 紙吹雪 (Confetti) エンジン
+ * 自前軽量 Canvas 紙吹雪 (Confetti) エンジン (高速テンポ調整版)
  */
 class ConfettiCannon {
   constructor() {
@@ -26,11 +27,11 @@ class ConfettiCannon {
   }
 
   /**
-   * 紙吹雪を発射する
+   * 紙吹雪を発射する (高速落下・短時間フェード)
    * @param {number} count
    * @param {boolean} isRankS
    */
-  fire(count = 90, isRankS = false) {
+  fire(count = 85, isRankS = false) {
     this.resize();
     if (!this.canvas.parentElement) {
       document.body.appendChild(this.canvas);
@@ -40,19 +41,19 @@ class ConfettiCannon {
     const activeColors = isRankS ? goldColors : this.colors;
 
     this.particles = [];
-    for (let i = 0; i < (isRankS ? count * 1.5 : count); i++) {
+    for (let i = 0; i < (isRankS ? count * 1.4 : count); i++) {
       this.particles.push({
         x: Math.random() * this.canvas.width,
-        y: -20 - Math.random() * 100,
+        y: -20 - Math.random() * 80,
         w: 6 + Math.random() * 8,
         h: 4 + Math.random() * 6,
         color: activeColors[Math.floor(Math.random() * activeColors.length)],
-        vx: (Math.random() - 0.5) * 4,
-        vy: 2 + Math.random() * 4,
+        vx: (Math.random() - 0.5) * 5,
+        vy: 6 + Math.random() * 8, // 高速落下 (旧 2〜6 -> 6〜14)
         rotation: Math.random() * 360,
-        vRot: (Math.random() - 0.5) * 8,
+        vRot: (Math.random() - 0.5) * 12,
         opacity: 1,
-        oscSpeed: 0.05 + Math.random() * 0.05,
+        oscSpeed: 0.08 + Math.random() * 0.06,
         oscStep: Math.random() * Math.PI * 2,
       });
     }
@@ -73,8 +74,8 @@ class ConfettiCannon {
       p.oscStep += p.oscSpeed;
       p.rotation += p.vRot;
 
-      if (p.y > this.canvas.height - 50) {
-        p.opacity -= 0.025;
+      if (p.y > this.canvas.height - 120) {
+        p.opacity -= 0.045; // より早くサッと消える
       }
 
       if (p.opacity > 0 && p.y < this.canvas.height + 20) {
@@ -140,6 +141,18 @@ export class GameClearModal {
           <h2 class="modal-title" id="modal-eval-title">EXCELLENT!</h2>
           <p class="modal-subtitle" id="modal-eval-subtitle">難易度目標をクリアしました！</p>
           
+          <!-- スコアカード (大型デジタル表示 & NEW RECORD) -->
+          <div class="result-score-card">
+            <span class="score-label">TOTAL SCORE</span>
+            <div class="score-number-row">
+              <span class="score-value" id="result-score">0</span>
+              <span class="new-record-badge hidden" id="result-new-record">🏆 NEW RECORD!</span>
+            </div>
+            <div class="score-breakdown-row" id="result-score-breakdown">
+              <span>倍率: x1.0</span> | <span>ボーナス: 0</span>
+            </div>
+          </div>
+
           <div class="result-grid">
             <div class="result-item">
               <span class="result-label">クリアタイム</span>
@@ -179,6 +192,9 @@ export class GameClearModal {
     this.star3 = this.container.querySelector('#star-3');
     this.evalTitleEl = this.container.querySelector('#modal-eval-title');
     this.evalSubtitleEl = this.container.querySelector('#modal-eval-subtitle');
+    this.scoreEl = this.container.querySelector('#result-score');
+    this.newRecordBadgeEl = this.container.querySelector('#result-new-record');
+    this.scoreBreakdownEl = this.container.querySelector('#result-score-breakdown');
     this.timeEl = this.container.querySelector('#result-time');
     this.targetTimeEl = this.container.querySelector('#result-target-time');
     this.movesEl = this.container.querySelector('#result-moves');
@@ -189,11 +205,12 @@ export class GameClearModal {
 
   bindEvents() {
     this.engine.on('gameClear', (result) => {
-      // 盤面の勝利ウェーブを少し見せてからリザルトモーダルと紙吹雪を展開
+      // 3レーンの勝利ウェーブをしっかり鑑賞できるウエイト (約1.3秒)
       setTimeout(() => {
         this.show(result);
-      }, 350);
+      }, 1300);
     });
+
 
     const copyBtn = this.container.querySelector('#modal-copy-btn');
     copyBtn?.addEventListener('click', async () => {
@@ -241,13 +258,53 @@ export class GameClearModal {
 
     const evaluation = evaluateResult(result.moveCount, result.elapsedTime, height, diffLevel);
 
-    // 紙吹雪発射！
-    this.confetti.fire(90, evaluation.rank === 'S');
+    // ハイスコア判定と Cookie 永続化
+    const saveRes = checkAndSaveHighScore(diffLevel, evaluation.score, result.moveCount, result.elapsedTime);
+
+    // 紙吹雪発射！ (高速版)
+    this.confetti.fire(85, evaluation.rank === 'S');
 
     // ランクバッジ
     if (this.rankBadgeEl) {
       this.rankBadgeEl.textContent = `RANK ${evaluation.rank}`;
       this.rankBadgeEl.className = `modal-rank-badge rank-${evaluation.rank.toLowerCase()} rank-bounce`;
+    }
+
+    // スコアの表示 (カウントアップ演出)
+    if (this.scoreEl) {
+      const targetScore = evaluation.score;
+      let currentVal = 0;
+      const step = Math.max(1, Math.floor(targetScore / 25));
+      const counterTimer = setInterval(() => {
+        currentVal = Math.min(targetScore, currentVal + step);
+        if (this.scoreEl) this.scoreEl.textContent = currentVal.toLocaleString();
+        if (currentVal >= targetScore) {
+          clearInterval(counterTimer);
+        }
+      }, 20);
+    }
+
+    // NEW RECORD バッジ
+    if (this.newRecordBadgeEl) {
+      if (saveRes.isNewRecord && saveRes.previousBest > 0) {
+        this.newRecordBadgeEl.classList.remove('hidden');
+        this.newRecordBadgeEl.textContent = '🏆 NEW RECORD!';
+      } else if (saveRes.isNewRecord) {
+        this.newRecordBadgeEl.classList.remove('hidden');
+        this.newRecordBadgeEl.textContent = '✨ 初クリア記録!';
+      } else {
+        this.newRecordBadgeEl.classList.add('hidden');
+      }
+    }
+
+    // スコア内訳
+    if (this.scoreBreakdownEl && evaluation.scoreBreakdown) {
+      const b = evaluation.scoreBreakdown;
+      this.scoreBreakdownEl.innerHTML = `
+        <span>難易度倍率: <strong>x${b.diffMultiplier}</strong></span>
+        <span>効率: <strong>${(b.efficiency * 100).toFixed(0)}%</strong></span>
+        <span>ボーナス: <strong>+${b.rankBonus.toLocaleString()}</strong></span>
+      `;
     }
 
     // 星の順次ポップイン演出
@@ -299,6 +356,7 @@ export class GameClearModal {
 
     this.modalEl?.classList.remove('hidden');
   }
+
 
   /**
    * モーダルを非表示にする

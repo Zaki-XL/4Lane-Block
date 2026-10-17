@@ -3,6 +3,7 @@ import { BlockColor, ColorConfig } from '../core/types.js';
 import { generateRandomSalt } from '../core/prng.js';
 import { DifficultyTitles, calculateTargets } from '../core/difficulty.js';
 import { GameTimer } from '../core/timer.js';
+import { getHighScore } from '../core/storage.js';
 
 /**
  * 盤面描画レンダラー
@@ -178,6 +179,8 @@ export class BoardRenderer {
     const currentHeight = state.heightLimit;
     const currentDiff = state.difficultyLevel || 5;
     const targets = calculateTargets(currentHeight, currentDiff);
+    const bestRecord = getHighScore(currentDiff);
+    const bestScoreStr = bestRecord ? `${bestRecord.score.toLocaleString()} 点` : '---';
 
     const overlayEl = document.createElement('div');
     overlayEl.className = 'start-overlay';
@@ -192,19 +195,20 @@ export class BoardRenderer {
         </div>
 
         <div class="overlay-config-form">
-          <!-- 段数選択 -->
-          <div class="form-row">
-            <label for="overlay-height-select" class="form-label">レーン段数:</label>
-            <div class="form-field">
-              <select id="overlay-height-select" class="config-select">
-                ${Array.from({ length: 13 }, (_, i) => i + 3).map(h => `
-                  <option value="${h}" ${h === currentHeight ? 'selected' : ''}>${h} 段</option>
-                `).join('')}
-              </select>
+          <!-- 段数スライダー -->
+          <div class="form-row-col">
+            <div class="diff-label-row">
+              <span class="form-label">レーン段数:</span>
+              <strong class="height-level-text" id="overlay-height-text">${currentHeight} 段</strong>
+            </div>
+            <div class="slider-wrapper">
+              <span class="slider-end-label">3段</span>
+              <input type="range" id="overlay-height-slider" min="3" max="15" step="1" value="${currentHeight}" class="config-slider height-slider" />
+              <span class="slider-end-label">15段</span>
             </div>
           </div>
 
-          <!-- 難易度スライダー -->
+          <!-- 難易度スライダー & ハイスコア -->
           <div class="form-row-col">
             <div class="diff-label-row">
               <span class="form-label">難易度:</span>
@@ -215,6 +219,9 @@ export class BoardRenderer {
               <span class="slider-end-label">1 易</span>
               <input type="range" id="overlay-diff-slider" min="1" max="10" step="1" value="${currentDiff}" class="difficulty-slider" />
               <span class="slider-end-label">10 難</span>
+            </div>
+            <div class="highscore-preview-row">
+              <span class="highscore-badge" id="overlay-best-badge">🏆 自己最高: <strong id="overlay-best-score">${bestScoreStr}</strong></span>
             </div>
           </div>
 
@@ -244,10 +251,12 @@ export class BoardRenderer {
     `;
 
     // イベントバインド
-    const heightSelect = overlayEl.querySelector('#overlay-height-select');
+    const heightSlider = overlayEl.querySelector('#overlay-height-slider');
+    const heightText = overlayEl.querySelector('#overlay-height-text');
     const diffSlider = overlayEl.querySelector('#overlay-diff-slider');
     const diffText = overlayEl.querySelector('#overlay-diff-text');
     const speedText = overlayEl.querySelector('#overlay-speed-text');
+    const bestScoreEl = overlayEl.querySelector('#overlay-best-score');
     const targetMovesEl = overlayEl.querySelector('#overlay-target-moves');
     const targetTimeEl = overlayEl.querySelector('#overlay-target-time');
     const saltInput = overlayEl.querySelector('#overlay-salt-input');
@@ -268,15 +277,32 @@ export class BoardRenderer {
       if (speedText) speedText.textContent = `(${t.secPerMove}s/手)`;
       if (targetMovesEl) targetMovesEl.textContent = `${t.targetMoves} 手`;
       if (targetTimeEl) targetTimeEl.textContent = GameTimer.formatTime(t.targetTimeMs);
+
+      // ハイスコア表示更新
+      const record = getHighScore(lvl);
+      if (bestScoreEl) bestScoreEl.textContent = record ? `${record.score.toLocaleString()} 点` : '---';
     });
 
-    // 段数セレクト連動
-    heightSelect?.addEventListener('change', () => {
+    // 段数スライダー連動 (ドラッグ中は数値と目標プレビューのみ更新、確定時に盤面再構築)
+    // @ts-ignore
+    heightSlider?.addEventListener('input', () => {
       // @ts-ignore
-      const newH = parseInt(heightSelect.value, 10);
+      const h = parseInt(heightSlider.value, 10);
+      if (heightText) heightText.textContent = `${h} 段`;
+      const lvl = this.engine.getState().difficultyLevel || 5;
+      const t = calculateTargets(h, lvl);
+      if (targetMovesEl) targetMovesEl.textContent = `${t.targetMoves} 手`;
+      if (targetTimeEl) targetTimeEl.textContent = GameTimer.formatTime(t.targetTimeMs);
+    });
+
+    // @ts-ignore
+    heightSlider?.addEventListener('change', () => {
+      // @ts-ignore
+      const newH = parseInt(heightSlider.value, 10);
       this.engine.setHeightLimit(newH);
       this.updateUrlParam(this.engine.getCurrentSalt());
     });
+
 
     // 新規ソルト生成
     newSaltBtn?.addEventListener('click', () => {
