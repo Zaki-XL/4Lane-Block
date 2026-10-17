@@ -5,6 +5,112 @@ import { generateRandomSalt } from '../core/prng.js';
 import { evaluateResult, DifficultyTitles } from '../core/difficulty.js';
 
 /**
+ * 自前軽量 Canvas 紙吹雪 (Confetti) エンジン
+ */
+class ConfettiCannon {
+  constructor() {
+    this.canvas = document.createElement('canvas');
+    this.canvas.className = 'confetti-canvas';
+    this.ctx = this.canvas.getContext('2d');
+    this.particles = [];
+    this.animId = null;
+    this.colors = ['#38bdf8', '#fbbf24', '#f43f5e', '#34d399', '#a855f7', '#fb923c', '#ffffff'];
+
+    this.resize = this.resize.bind(this);
+    window.addEventListener('resize', this.resize);
+  }
+
+  resize() {
+    this.canvas.width = window.innerWidth;
+    this.canvas.height = window.innerHeight;
+  }
+
+  /**
+   * 紙吹雪を発射する
+   * @param {number} count
+   * @param {boolean} isRankS
+   */
+  fire(count = 90, isRankS = false) {
+    this.resize();
+    if (!this.canvas.parentElement) {
+      document.body.appendChild(this.canvas);
+    }
+
+    const goldColors = ['#fbbf24', '#f59e0b', '#fef08a', '#ffffff', '#38bdf8'];
+    const activeColors = isRankS ? goldColors : this.colors;
+
+    this.particles = [];
+    for (let i = 0; i < (isRankS ? count * 1.5 : count); i++) {
+      this.particles.push({
+        x: Math.random() * this.canvas.width,
+        y: -20 - Math.random() * 100,
+        w: 6 + Math.random() * 8,
+        h: 4 + Math.random() * 6,
+        color: activeColors[Math.floor(Math.random() * activeColors.length)],
+        vx: (Math.random() - 0.5) * 4,
+        vy: 2 + Math.random() * 4,
+        rotation: Math.random() * 360,
+        vRot: (Math.random() - 0.5) * 8,
+        opacity: 1,
+        oscSpeed: 0.05 + Math.random() * 0.05,
+        oscStep: Math.random() * Math.PI * 2,
+      });
+    }
+
+    if (!this.animId) {
+      this.loop();
+    }
+  }
+
+  loop() {
+    if (!this.ctx) return;
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+    let activeCount = 0;
+    for (const p of this.particles) {
+      p.x += p.vx + Math.sin(p.oscStep) * 1.5;
+      p.y += p.vy;
+      p.oscStep += p.oscSpeed;
+      p.rotation += p.vRot;
+
+      if (p.y > this.canvas.height - 50) {
+        p.opacity -= 0.025;
+      }
+
+      if (p.opacity > 0 && p.y < this.canvas.height + 20) {
+        activeCount++;
+        this.ctx.save();
+        this.ctx.translate(p.x, p.y);
+        this.ctx.rotate((p.rotation * Math.PI) / 180);
+        this.ctx.globalAlpha = Math.max(0, p.opacity);
+        this.ctx.fillStyle = p.color;
+        this.ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        this.ctx.restore();
+      }
+    }
+
+    if (activeCount > 0) {
+      this.animId = requestAnimationFrame(() => this.loop());
+    } else {
+      this.stop();
+    }
+  }
+
+  stop() {
+    if (this.animId) {
+      cancelAnimationFrame(this.animId);
+      this.animId = null;
+    }
+    if (this.ctx) {
+      this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    }
+    if (this.canvas.parentElement) {
+      this.canvas.parentElement.removeChild(this.canvas);
+    }
+  }
+}
+
+/**
  * ゲームクリア・リザルトモーダル
  */
 export class GameClearModal {
@@ -15,6 +121,7 @@ export class GameClearModal {
   constructor(engine, containerElement) {
     this.engine = engine;
     this.container = containerElement;
+    this.confetti = new ConfettiCannon();
 
     this.render();
     this.bindEvents();
@@ -25,7 +132,11 @@ export class GameClearModal {
       <div id="clear-modal" class="modal-backdrop hidden">
         <div class="modal-card">
           <div class="modal-rank-badge" id="modal-rank-badge">RANK S</div>
-          <div class="modal-stars" id="modal-stars">★★★</div>
+          <div class="modal-stars-container" id="modal-stars-container">
+            <span class="star-item" id="star-1">★</span>
+            <span class="star-item" id="star-2">★</span>
+            <span class="star-item" id="star-3">★</span>
+          </div>
           <h2 class="modal-title" id="modal-eval-title">EXCELLENT!</h2>
           <p class="modal-subtitle" id="modal-eval-subtitle">難易度目標をクリアしました！</p>
           
@@ -62,7 +173,10 @@ export class GameClearModal {
 
     this.modalEl = this.container.querySelector('#clear-modal');
     this.rankBadgeEl = this.container.querySelector('#modal-rank-badge');
-    this.starsEl = this.container.querySelector('#modal-stars');
+    this.starsContainerEl = this.container.querySelector('#modal-stars-container');
+    this.star1 = this.container.querySelector('#star-1');
+    this.star2 = this.container.querySelector('#star-2');
+    this.star3 = this.container.querySelector('#star-3');
     this.evalTitleEl = this.container.querySelector('#modal-eval-title');
     this.evalSubtitleEl = this.container.querySelector('#modal-eval-subtitle');
     this.timeEl = this.container.querySelector('#result-time');
@@ -75,7 +189,10 @@ export class GameClearModal {
 
   bindEvents() {
     this.engine.on('gameClear', (result) => {
-      this.show(result);
+      // 盤面の勝利ウェーブを少し見せてからリザルトモーダルと紙吹雪を展開
+      setTimeout(() => {
+        this.show(result);
+      }, 350);
     });
 
     const copyBtn = this.container.querySelector('#modal-copy-btn');
@@ -124,17 +241,31 @@ export class GameClearModal {
 
     const evaluation = evaluateResult(result.moveCount, result.elapsedTime, height, diffLevel);
 
-    // ランクバッジと星
+    // 紙吹雪発射！
+    this.confetti.fire(90, evaluation.rank === 'S');
+
+    // ランクバッジ
     if (this.rankBadgeEl) {
       this.rankBadgeEl.textContent = `RANK ${evaluation.rank}`;
-      this.rankBadgeEl.className = `modal-rank-badge rank-${evaluation.rank.toLowerCase()}`;
+      this.rankBadgeEl.className = `modal-rank-badge rank-${evaluation.rank.toLowerCase()} rank-bounce`;
     }
 
-    if (this.starsEl) {
-      const fullStars = '★'.repeat(evaluation.stars);
-      const emptyStars = '☆'.repeat(3 - evaluation.stars);
-      this.starsEl.textContent = fullStars + emptyStars;
-    }
+    // 星の順次ポップイン演出
+    const starEls = [this.star1, this.star2, this.star3];
+    starEls.forEach((starEl, idx) => {
+      if (!starEl) return;
+      starEl.className = 'star-item';
+      starEl.textContent = idx < evaluation.stars ? '★' : '☆';
+      if (idx < evaluation.stars) {
+        starEl.classList.add('star-filled');
+        // 時間差でポンと登場
+        setTimeout(() => {
+          starEl.classList.add('star-pop');
+        }, (idx + 1) * 220);
+      } else {
+        starEl.classList.add('star-empty');
+      }
+    });
 
     if (this.evalTitleEl) this.evalTitleEl.textContent = evaluation.title;
 
@@ -173,6 +304,8 @@ export class GameClearModal {
    * モーダルを非表示にする
    */
   hide() {
+    this.confetti.stop();
     this.modalEl?.classList.add('hidden');
   }
 }
+

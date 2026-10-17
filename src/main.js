@@ -31,9 +31,7 @@ function initApp() {
   }
 
   // 3. UIレンダラーとビューの初期化
-  const renderer = new BoardRenderer(boardEl, () => {
-    engine.start();
-  });
+  const renderer = new BoardRenderer(boardEl, engine);
   new TimerAndControlView(engine, controlEl);
   new GameClearModal(engine, modalContainerEl);
 
@@ -57,8 +55,13 @@ function initApp() {
     renderer.setKeyboardFocus(focusedIndex);
   });
 
+  // テスト・デバッグ用グローバル参照
+  // @ts-ignore
+  window.__ENGINE__ = engine;
+
   console.log('4Lane Block initialized successfully. Salt:', engine.getCurrentSalt());
 }
+
 
 // DOM読み込み完了時に起動
 if (document.readyState === 'loading') {
