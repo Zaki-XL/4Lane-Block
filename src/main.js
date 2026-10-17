@@ -1,12 +1,13 @@
 // @ts-check
-import { GameEngine } from './core/game_engine.js?v=2.6';
-import { getSavedSettings } from './core/storage.js?v=2.6';
-import { BoardRenderer } from './ui/renderer.js?v=2.6';
-import { TimerAndControlView } from './ui/timer_view.js?v=2.6';
-import { GameClearModal } from './ui/modal.js?v=2.6';
-import { ClickInputController } from './controllers/click_controller.js?v=2.6';
-import { DragDropInputController } from './controllers/drag_drop_controller.js?v=2.6';
-import { KeyboardInputController } from './controllers/keyboard_controller.js?v=2.6';
+import { GameEngine } from './core/game_engine.js?v=2.7';
+import { getSavedSettings } from './core/storage.js?v=2.7';
+import { BoardRenderer } from './ui/renderer.js?v=2.7';
+import { TimerAndControlView } from './ui/timer_view.js?v=2.7';
+import { GameClearModal } from './ui/modal.js?v=2.7';
+import { ClickInputController } from './controllers/click_controller.js?v=2.7';
+import { DragDropInputController } from './controllers/drag_drop_controller.js?v=2.7';
+import { TouchInputController } from './controllers/touch_controller.js?v=2.7';
+import { KeyboardInputController } from './controllers/keyboard_controller.js?v=2.7';
 
 /**
  * アプリケーションの初期化
@@ -52,9 +53,10 @@ function initApp() {
     renderer.render(state);
   });
 
-  // 4. 入力コントローラー層の登録 (API経由で統一操作)
+  // 4. 入力コントローラー層の登録 (PC・スマホ双方の入力を完全サポート)
   new ClickInputController(engine, boardEl);
   new DragDropInputController(engine, boardEl);
+  new TouchInputController(engine, boardEl);
   new KeyboardInputController(engine, (focusedIndex) => {
     renderer.setKeyboardFocus(focusedIndex);
   });

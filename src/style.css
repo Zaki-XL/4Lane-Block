@@ -65,38 +65,37 @@ body {
   line-height: 1.2;
 }
 
-/* コントロール・ステータスパネル (スマートHUD) */
+/* コントロール・ステータスパネル (スマートHUD: 盤面と完全同一の最大幅600px) */
 .control-container {
   width: 100%;
-  max-width: 680px;
+  max-width: 600px;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  padding: 5px 12px;
+  padding: 5px 10px;
   margin-bottom: 6px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
   flex-shrink: 0;
+  box-sizing: border-box;
 }
 
 .hud-container {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
+  width: 100%;
 }
 
-/* メイン情報 (TIMEとMOVESを特大強調・幅固定でレイアウトズレ防止) */
+/* メイン情報 (TIMEとMOVES: 等幅tabular-numsによりピクセル固定不要で一切ブレない) */
 .hud-primary-stats {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex-shrink: 0;
 }
 
 .stat-time-card {
-  width: 116px;
-  min-width: 116px;
-  max-width: 116px;
   background: rgba(15, 23, 42, 0.85);
   border: 1px solid rgba(56, 189, 248, 0.4);
   box-shadow: 0 0 12px rgba(56, 189, 248, 0.15);
@@ -106,9 +105,6 @@ body {
 }
 
 .stat-moves-card {
-  width: 74px;
-  min-width: 74px;
-  max-width: 74px;
   background: rgba(15, 23, 42, 0.85);
   border: 1px solid rgba(251, 191, 36, 0.35);
   box-shadow: 0 0 10px rgba(251, 191, 36, 0.12);
@@ -118,7 +114,7 @@ body {
 }
 
 .stat-value.time-value {
-  font-size: 1.35rem;
+  font-size: clamp(1.1rem, 2.5vw, 1.35rem);
   font-weight: 900;
   color: #38bdf8;
   font-family: 'Consolas', 'Menlo', 'Monaco', 'Courier New', monospace;
@@ -130,7 +126,7 @@ body {
 }
 
 .stat-value.moves-value {
-  font-size: 1.2rem;
+  font-size: clamp(1.0rem, 2.2vw, 1.2rem);
   font-weight: 800;
   color: #fbbf24;
   font-family: 'Consolas', 'Menlo', 'Monaco', 'Courier New', monospace;
@@ -139,13 +135,13 @@ body {
   display: block;
 }
 
-/* サブ情報 (目標と設定バッジ: 小さく整理) */
+/* サブ情報 (目標と設定バッジ: 画面幅に応じて柔軟に縮小・省略) */
 .hud-secondary-stats {
   display: flex;
   flex-direction: column;
   gap: 2px;
   flex: 1;
-  min-width: 120px;
+  min-width: 0;
   overflow: hidden;
 }
 
@@ -652,6 +648,7 @@ body {
   height: 100%;
   min-height: 0;
   box-sizing: border-box;
+  touch-action: none; /* スマホ操作時の画面スクロール干渉を完全防止 */
 }
 
 .lane:hover {
@@ -747,6 +744,7 @@ body {
   position: relative;
   border: 1px solid rgba(255, 255, 255, 0.12);
   box-sizing: border-box;
+  touch-action: none;
 
   /* 下位ブロックの沈静化表現 (操作不可であることを明確化) */
   filter: brightness(0.68) saturate(0.8);
@@ -1220,4 +1218,48 @@ body {
   display: flex;
   gap: 8px;
   justify-content: center;
+}
+
+/* スマホ縦画面向け (幅480px以下): HUDの2行レイアウト最適化 */
+@media (max-width: 480px) {
+  .hud-container {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto;
+    gap: 4px 8px;
+  }
+
+  .hud-primary-stats {
+    grid-column: 1 / 2;
+    grid-row: 1 / 2;
+    gap: 4px;
+  }
+
+  .hud-actions {
+    grid-column: 2 / 3;
+    grid-row: 1 / 2;
+    justify-content: flex-end;
+    gap: 4px;
+  }
+
+  .hud-secondary-stats {
+    grid-column: 1 / 3;
+    grid-row: 2 / 3;
+    width: 100%;
+    margin-top: 2px;
+  }
+
+  .hud-meta-row {
+    justify-content: space-between;
+  }
+
+  .btn.btn-reset, .hud-actions .btn-reset {
+    padding: 4px 10px;
+    font-size: 0.8rem;
+  }
+
+  .btn.btn-settings, .hud-actions .btn-settings {
+    padding: 4px 8px;
+    font-size: 0.78rem;
+  }
 }
