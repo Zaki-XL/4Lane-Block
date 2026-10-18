@@ -623,6 +623,110 @@ body {
   box-shadow: 0 0 10px rgba(52, 211, 153, 0.9);
 }
 
+/* スライダー値とデフォルトバッジのコンテナ */
+.slider-val-badge-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* デフォルトバッジ (光るシアンのピルバッジ) */
+.default-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: rgba(56, 189, 248, 0.2);
+  border: 1px solid rgba(56, 189, 248, 0.6);
+  color: #38bdf8;
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
+  letter-spacing: 0.02em;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.default-badge.hidden {
+  display: none !important;
+}
+
+/* スライダートラックコンテナ (目盛りマーカーを配置) */
+.slider-track-container {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-bottom: 11px; /* 目盛りマーカー用のスペース */
+}
+
+.slider-track-container input[type="range"] {
+  width: 100%;
+  margin: 0;
+}
+
+/* 目盛り印 (Marker) */
+.slider-tick-marker {
+  position: absolute;
+  top: 9px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+  opacity: 0.85;
+}
+
+.slider-tick-marker .marker-arrow {
+  font-size: 0.52rem;
+  line-height: 1;
+  color: #38bdf8;
+  text-shadow: 0 0 5px rgba(56, 189, 248, 0.8);
+}
+
+.slider-tick-marker .marker-text {
+  font-size: 0.58rem;
+  font-weight: 700;
+  color: #94a3b8;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+  margin-top: 1px;
+}
+
+.height-default-marker .marker-arrow {
+  color: #34d399;
+  text-shadow: 0 0 5px rgba(52, 211, 153, 0.8);
+}
+
+/* デフォルト設定へ戻すボタン */
+.reset-default-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -2px;
+  margin-bottom: 2px;
+}
+
+.btn-reset-default {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-reset-default:hover {
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.1);
+  text-decoration: underline;
+}
+
 .salt-section {
   background: rgba(0, 0, 0, 0.25);
   border: 1px solid var(--border-color);

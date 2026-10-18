@@ -34,6 +34,9 @@ export default {
     resetBtn: '🔄 Réinitialiser',
     langLabel: 'Langue / Language :',
     invalidSalt: 'Code de puzzle invalide',
+    defaultBadge: 'Par défaut',
+    defaultMarker: 'Standard',
+    resetToDefaultBtn: '↺ Rétablir les paramètres par défaut (10 Niveaux Lv5)',
   },
   difficulty: {
     1: 'Très Facile',

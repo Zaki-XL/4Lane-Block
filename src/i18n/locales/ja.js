@@ -34,6 +34,9 @@ export default {
     resetBtn: '🔄 リセット',
     langLabel: '言語 / Language:',
     invalidSalt: '無効なソルトコードです',
+    defaultBadge: 'デフォルト',
+    defaultMarker: '標準',
+    resetToDefaultBtn: '↺ 標準設定に戻す (10段 Lv5)',
   },
   difficulty: {
     1: '最易',

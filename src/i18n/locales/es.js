@@ -34,6 +34,9 @@ export default {
     resetBtn: '🔄 Reiniciar',
     langLabel: 'Idioma / Language:',
     invalidSalt: 'Código de tablero inválido',
+    defaultBadge: 'Predeterminado',
+    defaultMarker: 'Estándar',
+    resetToDefaultBtn: '↺ Restablecer a estándar (10 Niveles Lv5)',
   },
   difficulty: {
     1: 'Muy Fácil',

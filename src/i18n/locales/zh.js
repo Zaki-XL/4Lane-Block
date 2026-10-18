@@ -34,6 +34,9 @@ export default {
     resetBtn: '🔄 重置',
     langLabel: '語言 / Language:',
     invalidSalt: '無效的盤面代碼',
+    defaultBadge: '預設',
+    defaultMarker: '標準',
+    resetToDefaultBtn: '↺ 恢復預設設定 (10層 Lv5)',
   },
   difficulty: {
     1: '最易',

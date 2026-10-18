@@ -34,6 +34,9 @@ export default {
     resetBtn: '🔄 Reset',
     langLabel: 'Language / 言語:',
     invalidSalt: 'Invalid salt code',
+    defaultBadge: 'Default',
+    defaultMarker: 'Def',
+    resetToDefaultBtn: '↺ Reset to Default (10 Tiers Lv5)',
   },
   difficulty: {
     1: 'Easiest',

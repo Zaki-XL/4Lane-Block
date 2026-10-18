@@ -34,6 +34,9 @@ export default {
     resetBtn: '🔄 리셋',
     langLabel: '언어 / Language:',
     invalidSalt: '유효하지 않은 솔트 코드입니다',
+    defaultBadge: '기본',
+    defaultMarker: '표준',
+    resetToDefaultBtn: '↺ 기본 설정으로 복원 (10단 Lv5)',
   },
   difficulty: {
     1: '매우 쉬움',

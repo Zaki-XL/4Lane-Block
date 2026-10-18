@@ -335,6 +335,19 @@ export class BoardRenderer {
     const heightText = modal.querySelector('#overlay-height-text');
     if (heightText) heightText.textContent = t('hud.tiers', { n: currentHeight });
 
+    const heightBadge = modal.querySelector('#overlay-height-default-badge');
+    if (heightBadge) {
+      heightBadge.textContent = t('settings.defaultBadge');
+      heightBadge.classList.toggle('hidden', currentHeight !== 10);
+    }
+
+    const heightMarker = modal.querySelector('#overlay-height-marker');
+    if (heightMarker) {
+      heightMarker.setAttribute('title', `10${t('hud.tiers', { n: '' })}: ${t('settings.defaultMarker')}`);
+    }
+    const heightMarkerText = modal.querySelector('#overlay-height-marker-text');
+    if (heightMarkerText) heightMarkerText.textContent = t('settings.defaultMarker');
+
     const diffLabel = modal.querySelector('#overlay-diff-label');
     if (diffLabel) diffLabel.textContent = t('settings.diffLabel');
 
@@ -343,6 +356,25 @@ export class BoardRenderer {
     const currentDiff = diffSlider ? parseInt(diffSlider.value, 10) : (state.difficultyLevel || 5);
     const diffText = modal.querySelector('#overlay-diff-text');
     if (diffText) diffText.textContent = `Lv ${currentDiff} ${t('difficulty.' + currentDiff)}`;
+
+    const diffBadge = modal.querySelector('#overlay-diff-default-badge');
+    if (diffBadge) {
+      diffBadge.textContent = t('settings.defaultBadge');
+      diffBadge.classList.toggle('hidden', currentDiff !== 5);
+    }
+
+    const diffMarker = modal.querySelector('#overlay-diff-marker');
+    if (diffMarker) {
+      diffMarker.setAttribute('title', `Lv5: ${t('settings.defaultMarker')}`);
+    }
+    const diffMarkerText = modal.querySelector('#overlay-diff-marker-text');
+    if (diffMarkerText) diffMarkerText.textContent = t('settings.defaultMarker');
+
+    const resetDefaultBtn = modal.querySelector('#overlay-reset-default-btn');
+    if (resetDefaultBtn) {
+      resetDefaultBtn.textContent = t('settings.resetToDefaultBtn');
+      resetDefaultBtn.setAttribute('title', t('settings.resetToDefaultBtn'));
+    }
 
     const bestConfigEl = modal.querySelector('#overlay-best-config');
     if (bestConfigEl) bestConfigEl.textContent = `${t('hud.tiers', { n: currentHeight })} Lv${currentDiff}`;
@@ -470,11 +502,20 @@ export class BoardRenderer {
           <div class="form-row-col">
             <div class="diff-label-row">
               <span class="form-label" id="overlay-height-label">${t('settings.heightLabel')}</span>
-              <strong class="height-level-text" id="overlay-height-text">${t('hud.tiers', { n: currentHeight })}</strong>
+              <div class="slider-val-badge-group">
+                <strong class="height-level-text" id="overlay-height-text">${t('hud.tiers', { n: currentHeight })}</strong>
+                <span class="default-badge ${currentHeight === 10 ? '' : 'hidden'}" id="overlay-height-default-badge">${t('settings.defaultBadge')}</span>
+              </div>
             </div>
             <div class="slider-wrapper">
               <span class="slider-end-label">3</span>
-              <input type="range" id="overlay-height-slider" min="3" max="15" step="1" value="${currentHeight}" class="config-slider height-slider" />
+              <div class="slider-track-container">
+                <input type="range" id="overlay-height-slider" min="3" max="15" step="1" value="${currentHeight}" class="config-slider height-slider" />
+                <div class="slider-tick-marker height-default-marker" id="overlay-height-marker" style="left: 58.33%;" title="10${t('hud.tiers', { n: '' })}: ${t('settings.defaultMarker')}">
+                  <span class="marker-arrow">▲</span>
+                  <span class="marker-text" id="overlay-height-marker-text">${t('settings.defaultMarker')}</span>
+                </div>
+              </div>
               <span class="slider-end-label">15</span>
             </div>
           </div>
@@ -483,13 +524,30 @@ export class BoardRenderer {
           <div class="form-row-col">
             <div class="diff-label-row">
               <span class="form-label" id="overlay-diff-label">${t('settings.diffLabel')}</span>
-              <span class="diff-level-text" id="overlay-diff-text">Lv ${currentDiff} ${t('difficulty.' + currentDiff)}</span>
+              <div class="slider-val-badge-group">
+                <span class="diff-level-text" id="overlay-diff-text">Lv ${currentDiff} ${t('difficulty.' + currentDiff)}</span>
+                <span class="default-badge ${currentDiff === 5 ? '' : 'hidden'}" id="overlay-diff-default-badge">${t('settings.defaultBadge')}</span>
+              </div>
             </div>
             <div class="slider-wrapper">
               <span class="slider-end-label">1</span>
-              <input type="range" id="overlay-diff-slider" min="1" max="10" step="1" value="${currentDiff}" class="difficulty-slider" />
+              <div class="slider-track-container">
+                <input type="range" id="overlay-diff-slider" min="1" max="10" step="1" value="${currentDiff}" class="difficulty-slider" />
+                <div class="slider-tick-marker diff-default-marker" id="overlay-diff-marker" style="left: 44.44%;" title="Lv5: ${t('settings.defaultMarker')}">
+                  <span class="marker-arrow">▲</span>
+                  <span class="marker-text" id="overlay-diff-marker-text">${t('settings.defaultMarker')}</span>
+                </div>
+              </div>
               <span class="slider-end-label">10</span>
             </div>
+
+            <!-- デフォルト設定へ戻すボタン -->
+            <div class="reset-default-row">
+              <button type="button" id="overlay-reset-default-btn" class="btn-reset-default" title="${t('settings.resetToDefaultBtn')}">
+                ${t('settings.resetToDefaultBtn')}
+              </button>
+            </div>
+
             <div class="highscore-preview-row">
               <div class="highscore-badge" id="overlay-best-badge">
                 <span class="highscore-badge-title">🏆 (<span id="overlay-best-config">${t('hud.tiers', { n: currentHeight })} Lv${currentDiff}</span>):</span>
@@ -561,6 +619,10 @@ export class BoardRenderer {
       if (bestScoreEl) bestScoreEl.textContent = record ? `${record.score.toLocaleString()} ${t('result.pts')}` : '---';
     };
 
+    const diffDefaultBadge = overlayEl.querySelector('#overlay-diff-default-badge');
+    const heightDefaultBadge = overlayEl.querySelector('#overlay-height-default-badge');
+    const resetDefaultBtn = overlayEl.querySelector('#overlay-reset-default-btn');
+
     // @ts-ignore
     diffSlider?.addEventListener('input', () => {
       // @ts-ignore
@@ -568,6 +630,7 @@ export class BoardRenderer {
       // @ts-ignore
       const h = parseInt(heightSlider?.value || String(this.engine.getState().heightLimit), 10);
       if (diffText) diffText.textContent = `Lv ${lvl} ${t('difficulty.' + lvl)}`;
+      if (diffDefaultBadge) diffDefaultBadge.classList.toggle('hidden', lvl !== 5);
       updateHighScorePreview(h, lvl);
     });
 
@@ -585,6 +648,7 @@ export class BoardRenderer {
       // @ts-ignore
       const lvl = parseInt(diffSlider?.value || String(this.engine.getState().difficultyLevel || 5), 10);
       if (heightText) heightText.textContent = t('hud.tiers', { n: h });
+      if (heightDefaultBadge) heightDefaultBadge.classList.toggle('hidden', h !== 10);
       updateHighScorePreview(h, lvl);
     });
 
@@ -593,6 +657,26 @@ export class BoardRenderer {
       // @ts-ignore
       const newH = parseInt(heightSlider.value, 10);
       this.dispatchAction('setHeightLimit', { height: newH });
+      this.updateUrlParam(this.engine.getCurrentSalt());
+    });
+
+    // デフォルト値 (10段 Lv5) へのワンクリック復帰
+    resetDefaultBtn?.addEventListener('click', () => {
+      if (heightSlider) {
+        // @ts-ignore
+        heightSlider.value = '10';
+      }
+      if (diffSlider) {
+        // @ts-ignore
+        diffSlider.value = '5';
+      }
+      if (heightText) heightText.textContent = t('hud.tiers', { n: 10 });
+      if (diffText) diffText.textContent = `Lv 5 ${t('difficulty.5')}`;
+      if (heightDefaultBadge) heightDefaultBadge.classList.remove('hidden');
+      if (diffDefaultBadge) diffDefaultBadge.classList.remove('hidden');
+      updateHighScorePreview(10, 5);
+      this.dispatchAction('setHeightLimit', { height: 10 });
+      this.engine.setDifficultyLevel(5);
       this.updateUrlParam(this.engine.getCurrentSalt());
     });
 
