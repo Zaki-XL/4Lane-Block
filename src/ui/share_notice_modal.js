@@ -102,6 +102,27 @@ export class ShareNoticeModal {
           </div>
         </div>
 
+        <!-- ポップアップブロック検知時のフォールバックUI -->
+        <div class="share-blocked-box hidden" id="sn-blocked-box">
+          <div class="share-blocked-header">
+            <span class="share-blocked-icon">⚠️</span>
+            <div class="share-blocked-title" id="sn-blocked-title">${t('shareNotice.popupBlockedTitle')}</div>
+          </div>
+          <div class="share-blocked-desc" id="sn-blocked-desc">${t('shareNotice.popupBlockedDesc')}</div>
+          <div class="share-fallback-actions">
+            <a id="sn-fallback-direct-link" class="btn btn-share btn-sm" target="_blank" rel="noopener noreferrer">
+              <span class="btn-share-icon">𝕏</span>
+              <span id="sn-direct-link-label">${t('shareNotice.directLinkBtn')}</span>
+            </a>
+            <button id="sn-fallback-sametab-btn" class="btn btn-outline btn-sm">
+              <span id="sn-sametab-label">${t('shareNotice.sameTabBtn')}</span>
+            </button>
+            <button id="sn-fallback-copy-url-btn" class="btn btn-secondary btn-sm">
+              <span id="sn-copy-url-label">${t('shareNotice.copyUrlBtn')}</span>
+            </button>
+          </div>
+        </div>
+
         <div class="share-notice-actions">
           <button id="share-notice-open-x-btn" class="btn btn-share btn-block">
             <span class="btn-share-icon">𝕏</span>
@@ -135,6 +156,16 @@ export class ShareNoticeModal {
     this.openXLabelEl = this.modalEl.querySelector('#sn-open-x-label');
     this.downloadLabelEl = this.modalEl.querySelector('#sn-download-label');
     this.cancelLabelEl = this.modalEl.querySelector('#sn-cancel-label');
+    // フォールバック関連要素
+    this.blockedBoxEl = this.modalEl.querySelector('#sn-blocked-box');
+    this.blockedTitleEl = this.modalEl.querySelector('#sn-blocked-title');
+    this.blockedDescEl = this.modalEl.querySelector('#sn-blocked-desc');
+    this.fallbackDirectLinkEl = /** @type {HTMLAnchorElement | null} */ (this.modalEl.querySelector('#sn-fallback-direct-link'));
+    this.directLinkLabelEl = this.modalEl.querySelector('#sn-direct-link-label');
+    this.sameTabBtnEl = this.modalEl.querySelector('#sn-fallback-sametab-btn');
+    this.sameTabLabelEl = this.modalEl.querySelector('#sn-sametab-label');
+    this.copyUrlBtnEl = this.modalEl.querySelector('#sn-fallback-copy-url-btn');
+    this.copyUrlLabelEl = this.modalEl.querySelector('#sn-copy-url-label');
   }
 
   /**
@@ -175,10 +206,47 @@ export class ShareNoticeModal {
     if (this.step2TitleEl) this.step2TitleEl.textContent = t('shareNotice.step2Title');
     if (this.step2DescEl) this.step2DescEl.textContent = t('shareNotice.step2Desc');
 
+    // フォールバック（ポップアップブロック検知）表示制御
+    const showBlocked = this.isBlocked || !!this.currentData?.simulateBlocked;
+    if (this.blockedBoxEl) {
+      if (showBlocked) {
+        this.blockedBoxEl.classList.remove('hidden');
+      } else {
+        this.blockedBoxEl.classList.add('hidden');
+      }
+    }
+    if (this.blockedTitleEl) this.blockedTitleEl.textContent = t('shareNotice.popupBlockedTitle');
+    if (this.blockedDescEl) this.blockedDescEl.textContent = t('shareNotice.popupBlockedDesc');
+    if (this.fallbackDirectLinkEl) {
+      this.fallbackDirectLinkEl.href = this.currentData?.tweetUrl || '#';
+    }
+    if (this.directLinkLabelEl) this.directLinkLabelEl.textContent = t('shareNotice.directLinkBtn');
+    if (this.sameTabLabelEl) this.sameTabLabelEl.textContent = t('shareNotice.sameTabBtn');
+    if (this.copyUrlLabelEl) this.copyUrlLabelEl.textContent = t('shareNotice.copyUrlBtn');
+
     // ボタンラベル
     if (this.openXLabelEl) this.openXLabelEl.textContent = t('shareNotice.openXBtn');
     if (this.downloadLabelEl) this.downloadLabelEl.textContent = t('shareNotice.saveImgBtn');
     if (this.cancelLabelEl) this.cancelLabelEl.textContent = t('shareNotice.closeBtn');
+  }
+
+  /**
+   * テキストをクリップボードにコピー（旧ブラウザ互換フォールバック）
+   * @param {string} text
+   */
+  fallbackCopyText(text) {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    } catch (_) {
+      // ignore
+    }
   }
 
   bindEvents() {
@@ -202,12 +270,57 @@ export class ShareNoticeModal {
         return;
       }
 
-      // 𝕏 を開くボタン
+      // 𝕏 を開くボタン (ポップアップブロック自動検知)
       if (target.id === 'share-notice-open-x-btn' || target.closest('#share-notice-open-x-btn')) {
         if (this.currentData?.tweetUrl) {
-          window.open(this.currentData.tweetUrl, '_blank', 'noopener,noreferrer');
+          let popupBlocked = false;
+          try {
+            const win = window.open(this.currentData.tweetUrl, '_blank', 'noopener,noreferrer');
+            if (!win || win.closed || typeof win.closed === 'undefined') {
+              popupBlocked = true;
+            }
+          } catch (_) {
+            popupBlocked = true;
+          }
+
+          if (popupBlocked) {
+            this.isBlocked = true;
+            this.updateContent();
+            return; // モーダルを閉じずにフォールバックを表示
+          }
         }
         this.hide();
+        return;
+      }
+
+      // フォールバック: この画面で𝕏に移動するボタン
+      if (target.id === 'sn-fallback-sametab-btn' || target.closest('#sn-fallback-sametab-btn')) {
+        if (this.currentData?.tweetUrl) {
+          window.location.href = this.currentData.tweetUrl;
+        }
+        return;
+      }
+
+      // フォールバック: 投稿URLをコピーボタン
+      if (target.id === 'sn-fallback-copy-url-btn' || target.closest('#sn-fallback-copy-url-btn')) {
+        if (this.currentData?.tweetUrl) {
+          const url = this.currentData.tweetUrl;
+          const onCopied = () => {
+            if (this.currentData?.showToast) {
+              this.currentData.showToast(t('shareNotice.copiedUrlToast'));
+            }
+          };
+
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(url).then(onCopied).catch(() => {
+              this.fallbackCopyText(url);
+              onCopied();
+            });
+          } else {
+            this.fallbackCopyText(url);
+            onCopied();
+          }
+        }
         return;
       }
 
@@ -238,10 +351,11 @@ export class ShareNoticeModal {
 
   /**
    * モーダルを表示
-   * @param {{ blob: Blob, filename: string, tweetUrl: string, copied: boolean, showToast?: (msg: string) => void }} data
+   * @param {{ blob: Blob, filename: string, tweetUrl: string, copied: boolean, simulateBlocked?: boolean, showToast?: (msg: string) => void }} data
    */
   show(data) {
     this.currentData = data;
+    this.isBlocked = !!data.simulateBlocked;
     this.updateContent();
     this.modalEl?.classList.remove('hidden');
   }
@@ -249,6 +363,7 @@ export class ShareNoticeModal {
   hide() {
     this.modalEl?.classList.add('hidden');
     this.currentData = null;
+    this.isBlocked = false;
   }
 
   updateTexts() {

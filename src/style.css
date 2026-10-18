@@ -2624,3 +2624,54 @@ body {
     display: none;
   }
 }
+
+/* ポップアップブロック検知フォールバック */
+.share-blocked-box {
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 12px;
+  text-align: left;
+  animation: fadeIn 0.25s ease-out;
+}
+
+.share-blocked-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.share-blocked-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.share-blocked-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #fbbf24;
+}
+
+.share-blocked-desc {
+  font-size: 0.75rem;
+  color: #f1f5f9;
+  line-height: 1.45;
+  margin-bottom: 10px;
+}
+
+.share-fallback-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.share-fallback-actions .btn {
+  width: 100%;
+  font-size: 0.8rem;
+  padding: 6px 12px;
+  justify-content: center;
+  text-decoration: none;
+}
+

@@ -137,6 +137,12 @@ export default {
     step1Desc: 'Dans le presse-papiers',
     step2Title: 'ÉTAPE 2 : Coller dans 𝕏',
     step2Desc: 'Ctrl+V ou Coller dans le texte',
+    popupBlockedTitle: 'Fenêtre contextuelle bloquée',
+    popupBlockedDesc: 'Votre navigateur a empêché l\'ouverture d\'une nouvelle fenêtre. Veuillez essayer l\'une des options ci-dessous.',
+    directLinkBtn: 'Ouvrir 𝕏 directement (Lien)',
+    sameTabBtn: 'Accéder à 𝕏 dans cet onglet',
+    copyUrlBtn: '📋 Copier l\'URL du post',
+    copiedUrlToast: 'URL du post copiée dans le presse-papiers !',
   },
   rta: {
     btn: '🏃 Mode RTA',

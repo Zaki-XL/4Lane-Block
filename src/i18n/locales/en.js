@@ -137,6 +137,12 @@ export default {
     step1Desc: 'Saved to clipboard',
     step2Title: 'STEP 2: Paste in 𝕏',
     step2Desc: 'Press Ctrl+V or Paste in editor',
+    popupBlockedTitle: 'Popup was blocked',
+    popupBlockedDesc: 'Your browser prevented opening a new window. Please try one of the options below.',
+    directLinkBtn: 'Open 𝕏 directly (Link)',
+    sameTabBtn: 'Navigate to 𝕏 in this tab',
+    copyUrlBtn: '📋 Copy Post URL',
+    copiedUrlToast: 'Post URL copied to clipboard!',
   },
   rta: {
     btn: '🏃 RTA Mode',

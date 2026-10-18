@@ -137,6 +137,12 @@ export default {
     step1Desc: '클립보드 저장 완료',
     step2Title: 'STEP 2: 𝕏에 붙여넣기',
     step2Desc: '작성창에 Ctrl+V 또는 붙여넣기',
+    popupBlockedTitle: '팝업이 차단되었습니다',
+    popupBlockedDesc: '브라우저 설정으로 인해 새 창을 열 수 없습니다. 아래 방법 중 하나를 시도해 주세요.',
+    directLinkBtn: '𝕏 직접 열기 (링크)',
+    sameTabBtn: '현재 탭에서 𝕏로 이동',
+    copyUrlBtn: '📋 게시 URL 복사',
+    copiedUrlToast: '게시 URL을 클립보드에 복사했습니다!',
   },
   rta: {
     btn: '🏃 RTA 모드',

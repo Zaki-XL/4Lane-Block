@@ -137,6 +137,12 @@ export default {
     step1Desc: 'Guardada en portapapeles',
     step2Title: 'PASO 2: Pegar en 𝕏',
     step2Desc: 'Pulsa Ctrl+V o Pegar',
+    popupBlockedTitle: 'Ventana emergente bloqueada',
+    popupBlockedDesc: 'Tu navegador impidió abrir una nueva ventana. Prueba una de las siguientes opciones.',
+    directLinkBtn: 'Abrir 𝕏 directamente (Enlace)',
+    sameTabBtn: 'Ir a 𝕏 en esta pestaña',
+    copyUrlBtn: '📋 Copiar URL de publicación',
+    copiedUrlToast: '¡URL de publicación copiada al portapapeles!',
   },
   rta: {
     btn: '🏃 Modo RTA',

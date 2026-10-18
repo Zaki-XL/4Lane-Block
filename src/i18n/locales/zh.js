@@ -137,6 +137,12 @@ export default {
     step1Desc: '已儲存至剪貼簿',
     step2Title: '步驟 2: 在 𝕏 貼上',
     step2Desc: '於發文欄 Ctrl+V 或貼上',
+    popupBlockedTitle: '彈出視窗已被封鎖',
+    popupBlockedDesc: '瀏覽器設定阻止了新視窗的開啟。請嘗試以下方式。',
+    directLinkBtn: '直接開啟 𝕏 (連結)',
+    sameTabBtn: '在此分頁前往 𝕏',
+    copyUrlBtn: '📋 複製發文連結',
+    copiedUrlToast: '已複製發文連結至剪貼簿！',
   },
   rta: {
     btn: '🏃 RTA 模式',

@@ -137,6 +137,12 @@ export default {
     step1Desc: 'クリップボードに格納済',
     step2Title: 'STEP 2: 𝕏 で貼り付け',
     step2Desc: '投稿欄で Ctrl+V または ペースト',
+    popupBlockedTitle: 'ポップアップがブロックされました',
+    popupBlockedDesc: 'ブラウザの設定により新しいウィンドウが開けませんでした。以下のいずれかの方法でお試しください。',
+    directLinkBtn: '𝕏 を直接開く (リンク)',
+    sameTabBtn: 'この画面で𝕏に移動する',
+    copyUrlBtn: '📋 投稿URLをコピー',
+    copiedUrlToast: '投稿URLをクリップボードにコピーしました！',
   },
   rta: {
     btn: '🏃 RTAモード',
