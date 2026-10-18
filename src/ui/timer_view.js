@@ -1,7 +1,7 @@
 // @ts-check
-import { GameTimer } from '../core/timer.js?v=3.9';
-import { GameEngine } from '../core/game_engine.js?v=3.9';
-import { t, i18n } from '../i18n/index.js?v=3.9';
+import { GameTimer } from '../core/timer.js';
+import { GameEngine } from '../core/game_engine.js';
+import { t, i18n } from '../i18n/index.js';
 
 /**
  * タイマーおよびコントロールパネルのUIビュー (画面上部HUD)
@@ -51,16 +51,16 @@ export class TimerAndControlView {
           <div class="config-summary-badges">
             <span class="config-pill" id="hud-height-pill">${t('hud.tiers', { n: currentHeight })}</span>
             <span class="config-pill" id="hud-diff-pill">Lv${currentDiff}</span>
-            <span class="config-pill salt-pill" id="hud-salt-pill" title="クリックしてソルトURLをコピー">${state.salt || '------'}</span>
+            <span class="config-pill salt-pill" id="hud-salt-pill" title="${t('hud.copySaltTitle')}">${state.salt || '------'}</span>
           </div>
         </div>
 
         <!-- 右側：アクションボタン (リセット & スコア一覧) -->
         <div class="hud-actions">
-          <button id="reset-game-btn" class="btn btn-reset" title="盤面のリセット・条件変更">
+          <button id="reset-game-btn" class="btn btn-reset" title="${t('hud.resetTitle')}">
             ${t('hud.resetBtn')}
           </button>
-          <button id="open-score-btn" class="btn btn-secondary btn-score" title="ハイスコア一覧を確認">
+          <button id="open-score-btn" class="btn btn-secondary btn-score" title="${t('hud.scoreTitle')}">
             ${t('hud.scoreBtn')}
           </button>
         </div>
@@ -86,8 +86,15 @@ export class TimerAndControlView {
     if (this.labelTime) this.labelTime.textContent = t('hud.time');
     if (this.labelMoves) this.labelMoves.textContent = t('hud.moves');
     if (this.hudHeightPill) this.hudHeightPill.textContent = t('hud.tiers', { n: state.heightLimit });
-    if (this.resetBtn) this.resetBtn.textContent = t('hud.resetBtn');
-    if (this.scoreBtn) this.scoreBtn.textContent = t('hud.scoreBtn');
+    if (this.hudSaltPill) this.hudSaltPill.setAttribute('title', t('hud.copySaltTitle'));
+    if (this.resetBtn) {
+      this.resetBtn.textContent = t('hud.resetBtn');
+      this.resetBtn.setAttribute('title', t('hud.resetTitle'));
+    }
+    if (this.scoreBtn) {
+      this.scoreBtn.textContent = t('hud.scoreBtn');
+      this.scoreBtn.setAttribute('title', t('hud.scoreTitle'));
+    }
   }
 
   /**

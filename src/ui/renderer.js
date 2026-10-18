@@ -1,10 +1,10 @@
 // @ts-check
-import { ColorConfig } from '../core/types.js?v=3.9';
-import { getHighScore, getRTARecord } from '../core/storage.js?v=3.9';
-import { generateRandomSalt } from '../core/prng.js?v=3.9';
-import { GameTimer } from '../core/timer.js?v=3.9';
-import { t, i18n } from '../i18n/index.js?v=3.9';
-import { RTASplitsView } from './rta_view.js?v=3.9';
+import { ColorConfig } from '../core/types.js';
+import { getHighScore, getRTARecord } from '../core/storage.js';
+import { generateRandomSalt } from '../core/prng.js';
+import { GameTimer } from '../core/timer.js';
+import { t, i18n } from '../i18n/index.js';
+import { RTASplitsView } from './rta_view.js';
 
 /**
  * 盤面描画レンダラー (View: 差分DOM更新 & rAFスロットリング最適化版)
@@ -285,7 +285,7 @@ export class BoardRenderer {
     if (isTop) {
       el.setAttribute('data-is-top', 'true');
       el.setAttribute('draggable', 'true');
-      el.title = 'ドラッグまたはクリックして移動';
+      el.title = t('app.moveTip');
     } else {
       el.removeAttribute('data-is-top');
       el.removeAttribute('draggable');
@@ -311,18 +311,138 @@ export class BoardRenderer {
   }
 
   /**
+   * 通常設定モーダルのテキストを現在の言語辞書に合わせて差分更新
+   * @param {import('../core/types.js').GameState} state
+   */
+  updateSettingsModalTexts(state) {
+    if (!this.settingsModalEl) return;
+    const modal = this.settingsModalEl;
+    const titleEl = modal.querySelector('.start-overlay-title');
+    if (titleEl) titleEl.textContent = t('settings.title');
+
+    const openRtaBtn = modal.querySelector('#overlay-open-rta-btn');
+    if (openRtaBtn) {
+      openRtaBtn.textContent = t('rta.btn');
+      openRtaBtn.setAttribute('title', t('rta.btn'));
+    }
+
+    const heightLabel = modal.querySelector('#overlay-height-label');
+    if (heightLabel) heightLabel.textContent = t('settings.heightLabel');
+
+    const heightSlider = modal.querySelector('#overlay-height-slider');
+    // @ts-ignore
+    const currentHeight = heightSlider ? parseInt(heightSlider.value, 10) : state.heightLimit;
+    const heightText = modal.querySelector('#overlay-height-text');
+    if (heightText) heightText.textContent = t('hud.tiers', { n: currentHeight });
+
+    const diffLabel = modal.querySelector('#overlay-diff-label');
+    if (diffLabel) diffLabel.textContent = t('settings.diffLabel');
+
+    const diffSlider = modal.querySelector('#overlay-diff-slider');
+    // @ts-ignore
+    const currentDiff = diffSlider ? parseInt(diffSlider.value, 10) : (state.difficultyLevel || 5);
+    const diffText = modal.querySelector('#overlay-diff-text');
+    if (diffText) diffText.textContent = `Lv ${currentDiff} ${t('difficulty.' + currentDiff)}`;
+
+    const bestConfigEl = modal.querySelector('#overlay-best-config');
+    if (bestConfigEl) bestConfigEl.textContent = `${t('hud.tiers', { n: currentHeight })} Lv${currentDiff}`;
+
+    const bestScoreEl = modal.querySelector('#overlay-best-score');
+    const bestRecord = getHighScore(currentHeight, currentDiff);
+    if (bestScoreEl) bestScoreEl.textContent = bestRecord ? `${bestRecord.score.toLocaleString()} ${t('result.pts')}` : '---';
+
+    const saltLabel = modal.querySelector('#overlay-salt-label');
+    if (saltLabel) saltLabel.textContent = t('settings.saltLabel');
+
+    const saltInput = modal.querySelector('#overlay-salt-input');
+    if (saltInput) saltInput.setAttribute('placeholder', t('settings.saltPlaceholder'));
+
+    const loadSaltBtn = modal.querySelector('#overlay-load-salt-btn');
+    if (loadSaltBtn) {
+      loadSaltBtn.textContent = t('settings.loadBtn');
+      loadSaltBtn.setAttribute('title', t('settings.loadBtn'));
+    }
+
+    const newSaltBtn = modal.querySelector('#overlay-new-salt-btn');
+    if (newSaltBtn) {
+      newSaltBtn.textContent = t('settings.reloadBtn');
+      newSaltBtn.setAttribute('title', t('settings.reloadBtn'));
+    }
+
+    const startBtn = modal.querySelector('#start-game-btn');
+    if (startBtn) startBtn.textContent = t('settings.startBtn');
+  }
+
+  /**
+   * RTA設定モーダルのテキストを現在の言語辞書に合わせて差分更新
+   */
+  updateRTASettingsModalTexts() {
+    if (!this.settingsModalEl) return;
+    const modal = this.settingsModalEl;
+
+    const titleEl = modal.querySelector('#rta-overlay-title');
+    if (titleEl) titleEl.textContent = t('rta.title');
+
+    const backBtn = modal.querySelector('#rta-back-normal-btn');
+    if (backBtn) {
+      backBtn.textContent = `◀ ${t('rta.backToNormalBtn')}`;
+      backBtn.setAttribute('title', t('rta.backToNormalBtn'));
+    }
+
+    const modeLabel = modal.querySelector('#rta-mode-label');
+    if (modeLabel) modeLabel.textContent = t('rta.modeLabel');
+
+    const marathonText = modal.querySelector('#rta-radio-marathon-text');
+    if (marathonText) marathonText.textContent = t('rta.marathon');
+
+    const countupText = modal.querySelector('#rta-radio-countup-text');
+    if (countupText) countupText.textContent = t('rta.countup');
+
+    const heightLabel = modal.querySelector('#rta-height-label');
+    if (heightLabel) heightLabel.textContent = t('rta.heightLabel');
+
+    const heightText = modal.querySelector('#rta-height-text');
+    if (heightText) heightText.textContent = t('hud.tiers', { n: this.selectedRtaHeight });
+
+    const bestBadgeTitle = modal.querySelector('#rta-best-badge-title');
+    if (bestBadgeTitle) bestBadgeTitle.textContent = `🏆 ${t('rta.bestRecord')}`;
+
+    const bestRecordVal = modal.querySelector('#rta-best-record-val');
+    if (bestRecordVal) {
+      const rec = getRTARecord(this.selectedRtaMode, this.selectedRtaHeight);
+      bestRecordVal.textContent = rec ? `${GameTimer.formatTime(rec.bestTotalTimeMs)} (${rec.bestScore.toLocaleString()} ${t('result.pts')})` : t('rta.noRecord');
+    }
+
+    const saltLabel = modal.querySelector('#rta-salt-label');
+    if (saltLabel) saltLabel.textContent = t('settings.saltLabel');
+
+    const saltInput = modal.querySelector('#rta-salt-input');
+    if (saltInput) saltInput.setAttribute('placeholder', t('settings.saltPlaceholder'));
+
+    const newSaltBtn = modal.querySelector('#rta-new-salt-btn');
+    if (newSaltBtn) {
+      newSaltBtn.textContent = t('settings.reloadBtn');
+      newSaltBtn.setAttribute('title', t('settings.reloadBtn'));
+    }
+
+    const startRunBtn = modal.querySelector('#rta-start-run-btn');
+    if (startRunBtn) startRunBtn.textContent = t('rta.startRunBtn');
+  }
+
+  /**
    * 設定・盤面保護モーダルの描画 (MVC: Controllerへのイベントディスパッチ)
    * @private
    * @param {import('../core/types.js').GameState} state
    * @param {boolean} isIdle
    */
   renderSettingsModal(state, isIdle) {
-    if (this.settingsModalEl && this.settingsModalEl.parentNode === this.container) {
+    if (this.isRTASettingsOpen) {
+      this.renderRTASettingsModal(state, isIdle);
       return;
     }
 
-    if (this.isRTASettingsOpen) {
-      this.renderRTASettingsModal(state, isIdle);
+    if (this.settingsModalEl && this.settingsModalEl.parentNode === this.container) {
+      this.updateSettingsModalTexts(state);
       return;
     }
 
@@ -349,7 +469,7 @@ export class BoardRenderer {
           <!-- 段数スライダー -->
           <div class="form-row-col">
             <div class="diff-label-row">
-              <span class="form-label">${t('settings.heightLabel')}</span>
+              <span class="form-label" id="overlay-height-label">${t('settings.heightLabel')}</span>
               <strong class="height-level-text" id="overlay-height-text">${t('hud.tiers', { n: currentHeight })}</strong>
             </div>
             <div class="slider-wrapper">
@@ -362,7 +482,7 @@ export class BoardRenderer {
           <!-- 難易度スライダー & ハイスコア -->
           <div class="form-row-col">
             <div class="diff-label-row">
-              <span class="form-label">${t('settings.diffLabel')}</span>
+              <span class="form-label" id="overlay-diff-label">${t('settings.diffLabel')}</span>
               <span class="diff-level-text" id="overlay-diff-text">Lv ${currentDiff} ${t('difficulty.' + currentDiff)}</span>
             </div>
             <div class="slider-wrapper">
@@ -381,7 +501,7 @@ export class BoardRenderer {
           <!-- ソルト設定 -->
           <div class="form-row-col salt-section">
             <div class="salt-label-row">
-              <label for="overlay-salt-input" class="form-label">${t('settings.saltLabel')}</label>
+              <label for="overlay-salt-input" class="form-label" id="overlay-salt-label">${t('settings.saltLabel')}</label>
             </div>
             <div class="salt-input-group">
               <input type="text" id="overlay-salt-input" value="${state.salt || ''}" class="salt-input" placeholder="${t('settings.saltPlaceholder')}" />
@@ -521,6 +641,7 @@ export class BoardRenderer {
    */
   renderRTASettingsModal(state, isIdle) {
     if (this.settingsModalEl && this.settingsModalEl.parentNode === this.container) {
+      this.updateRTASettingsModalTexts();
       return;
     }
 
@@ -540,7 +661,7 @@ export class BoardRenderer {
         <div class="overlay-card-header">
           <span class="shield-icon">🏃</span>
           <div style="flex: 1;">
-            <h3 class="start-overlay-title">${t('rta.title')}</h3>
+            <h3 class="start-overlay-title" id="rta-overlay-title">${t('rta.title')}</h3>
           </div>
           <button id="rta-back-normal-btn" class="btn btn-xs btn-secondary" title="${t('rta.backToNormalBtn')}">
             ◀ ${t('rta.backToNormalBtn')}
@@ -550,15 +671,15 @@ export class BoardRenderer {
         <div class="overlay-config-form">
           <!-- コース選択 -->
           <div class="form-row-col">
-            <span class="form-label">${t('rta.modeLabel')}</span>
+            <span class="form-label" id="rta-mode-label">${t('rta.modeLabel')}</span>
             <div class="rta-mode-selector">
               <label class="rta-radio-option ${this.selectedRtaMode === 'marathon' ? 'selected' : ''}">
                 <input type="radio" name="rta-mode-radio" value="marathon" ${this.selectedRtaMode === 'marathon' ? 'checked' : ''} />
-                <span class="rta-radio-text">${t('rta.marathon')}</span>
+                <span class="rta-radio-text" id="rta-radio-marathon-text">${t('rta.marathon')}</span>
               </label>
               <label class="rta-radio-option ${this.selectedRtaMode === 'countup' ? 'selected' : ''}">
                 <input type="radio" name="rta-mode-radio" value="countup" ${this.selectedRtaMode === 'countup' ? 'checked' : ''} />
-                <span class="rta-radio-text">${t('rta.countup')}</span>
+                <span class="rta-radio-text" id="rta-radio-countup-text">${t('rta.countup')}</span>
               </label>
             </div>
           </div>
@@ -566,7 +687,7 @@ export class BoardRenderer {
           <!-- カウントアップ時: 段数スライダー -->
           <div class="form-row-col ${this.selectedRtaMode === 'countup' ? '' : 'hidden'}" id="rta-height-section">
             <div class="diff-label-row">
-              <span class="form-label">${t('rta.heightLabel')}</span>
+              <span class="form-label" id="rta-height-label">${t('rta.heightLabel')}</span>
               <strong class="height-level-text" id="rta-height-text">${t('hud.tiers', { n: this.selectedRtaHeight })}</strong>
             </div>
             <div class="slider-wrapper">
@@ -579,7 +700,7 @@ export class BoardRenderer {
           <!-- 自己ベスト記録バッジ -->
           <div class="highscore-preview-row">
             <div class="highscore-badge" id="rta-best-badge">
-              <span class="highscore-badge-title">🏆 ${t('rta.bestRecord')}</span>
+              <span class="highscore-badge-title" id="rta-best-badge-title">🏆 ${t('rta.bestRecord')}</span>
               <strong class="highscore-badge-value" id="rta-best-record-val">${getRtaRecordText()}</strong>
             </div>
           </div>
@@ -587,7 +708,7 @@ export class BoardRenderer {
           <!-- ソルト設定 -->
           <div class="form-row-col salt-section">
             <div class="salt-label-row">
-              <label for="rta-salt-input" class="form-label">${t('settings.saltLabel')}</label>
+              <label for="rta-salt-input" class="form-label" id="rta-salt-label">${t('settings.saltLabel')}</label>
             </div>
             <div class="salt-input-group">
               <input type="text" id="rta-salt-input" value="${this.engine.getCurrentSalt() || ''}" class="salt-input" placeholder="${t('settings.saltPlaceholder')}" />
@@ -740,7 +861,7 @@ export class BoardRenderer {
     if (isTop) {
       el.setAttribute('data-is-top', 'true');
       el.setAttribute('draggable', 'true');
-      el.title = 'ドラッグまたはクリックして移動';
+      el.title = t('app.moveTip');
     }
 
     if (isPickedUp) {

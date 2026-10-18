@@ -1,15 +1,16 @@
 // @ts-check
-import { GameEngine } from './core/game_engine.js?v=3.9';
-import { getSavedSettings } from './core/storage.js?v=3.9';
-import { BoardRenderer } from './ui/renderer.js?v=3.9';
-import { TimerAndControlView } from './ui/timer_view.js?v=3.9';
-import { GameClearModal, ScoreListModal, HelpModal, RTAClearModal, RTAScoreListModal } from './ui/modal.js?v=3.9';
-import { ClickInputController } from './controllers/click_controller.js?v=3.9';
-import { DragDropInputController } from './controllers/drag_drop_controller.js?v=3.9';
-import { TouchInputController } from './controllers/touch_controller.js?v=3.9';
-import { KeyboardInputController } from './controllers/keyboard_controller.js?v=3.9';
-import { ModalActionController } from './controllers/modal_controller.js?v=3.9';
-import { t, i18n } from './i18n/index.js?v=3.9';
+import { APP_VERSION } from './version.js';
+import { GameEngine } from './core/game_engine.js';
+import { getSavedSettings } from './core/storage.js';
+import { BoardRenderer } from './ui/renderer.js';
+import { TimerAndControlView } from './ui/timer_view.js';
+import { GameClearModal, ScoreListModal, HelpModal, RTAClearModal, RTAScoreListModal } from './ui/modal.js';
+import { ClickInputController } from './controllers/click_controller.js';
+import { DragDropInputController } from './controllers/drag_drop_controller.js';
+import { TouchInputController } from './controllers/touch_controller.js';
+import { KeyboardInputController } from './controllers/keyboard_controller.js';
+import { ModalActionController } from './controllers/modal_controller.js';
+import { t, i18n } from './i18n/index.js';
 
 /**
  * 静的DOM要素（ヘッダー・フッター等）の多言語テキスト更新
@@ -36,7 +37,7 @@ function updateStaticElements() {
 
   const footerKeys = document.getElementById('footer-keys');
   if (footerKeys) {
-    footerKeys.innerHTML = `<strong>${t('footer.keysLabel')}</strong> <span class="key-badge">1</span>〜<span class="key-badge">4</span>、<span class="key-badge">←</span><span class="key-badge">→</span> + <span class="key-badge">Enter</span>、<span class="key-badge">Esc</span>`;
+    footerKeys.innerHTML = `<strong>${t('footer.keysLabel')}</strong> ${t('footer.keysDesc')}`;
   }
 }
 
@@ -121,7 +122,7 @@ function initApp() {
   // @ts-ignore
   window.__ENGINE__ = engine;
 
-  console.log('4Lane Block initialized successfully. Salt:', engine.getCurrentSalt());
+  console.log(`4Lane Block v${APP_VERSION} initialized successfully. Salt:`, engine.getCurrentSalt());
 }
 
 

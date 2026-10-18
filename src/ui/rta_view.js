@@ -1,7 +1,7 @@
 // @ts-check
-import { GameTimer } from '../core/timer.js?v=3.9';
-import { getRTARecord } from '../core/storage.js?v=3.9';
-import { t, i18n } from '../i18n/index.js?v=3.9';
+import { GameTimer } from '../core/timer.js';
+import { getRTARecord } from '../core/storage.js';
+import { t, i18n } from '../i18n/index.js';
 
 /**
  * RTAスプリット比較枠 (LiveSplit風 画面右側HUD)
@@ -171,7 +171,7 @@ export class RTASplitsView {
     for (let i = 0; i < totalStages; i++) {
       let stageName = '';
       if (runState.mode === 'marathon') {
-        stageName = `${3 + i}段`;
+        stageName = t('hud.tiers', { n: 3 + i });
       } else {
         stageName = `Lv ${1 + i}`;
       }

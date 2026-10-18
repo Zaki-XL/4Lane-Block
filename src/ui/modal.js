@@ -1,9 +1,42 @@
 // @ts-check
-import { GameTimer } from '../core/timer.js?v=3.9';
-import { GameEngine } from '../core/game_engine.js?v=3.9';
-import { evaluateResult } from '../core/difficulty.js?v=3.9';
-import { checkAndSaveHighScore, getAllHighScoreList, getRTARecord, resetAllRTARecords } from '../core/storage.js?v=3.9';
-import { t, i18n } from '../i18n/index.js?v=3.9';
+import { GameTimer } from '../core/timer.js';
+import { GameEngine } from '../core/game_engine.js';
+import { evaluateResult } from '../core/difficulty.js';
+import { checkAndSaveHighScore, getAllHighScoreList, getRTARecord, resetAllRTARecords } from '../core/storage.js';
+import { t, i18n } from '../i18n/index.js';
+import { generateResultCardBlob, generateRTAResultCardBlob, executeShare } from './result_card_canvas.js';
+
+/**
+ * 画面下部にフワッと表示するトースト通知
+ * @param {string} message
+ */
+export function showToast(message) {
+  let toastEl = document.getElementById('share-toast');
+  if (!toastEl) {
+    toastEl = document.createElement('div');
+    toastEl.id = 'share-toast';
+    toastEl.className = 'share-toast hidden';
+    document.body.appendChild(toastEl);
+  }
+  toastEl.textContent = message;
+  toastEl.classList.remove('hidden', 'fade-out');
+  toastEl.classList.add('visible');
+
+  // @ts-ignore
+  if (toastEl._timer) {
+    // @ts-ignore
+    clearTimeout(toastEl._timer);
+  }
+  // @ts-ignore
+  toastEl._timer = setTimeout(() => {
+    if (!toastEl) return;
+    toastEl.classList.remove('visible');
+    toastEl.classList.add('fade-out');
+    setTimeout(() => {
+      toastEl?.classList.add('hidden');
+    }, 300);
+  }, 2800);
+}
 
 /**
  * 自前軽量 Canvas 紙吹雪 (Confetti) エンジン (メモリ解放・リサイズライフサイクル管理版)
@@ -126,15 +159,56 @@ export class GameClearModal {
     this.confetti = new ConfettiCannon();
     /** @type {any} */
     this.lastResult = null;
+    /** @type {any} */
+    this.lastEvaluation = null;
+    /** @type {any} */
+    this.lastSaveRes = null;
+    /** @type {Blob | null} */
+    this.preRenderedBlob = null;
+    /** @type {Promise<Blob | null> | null} */
+    this.renderPromise = null;
+    /** @type {boolean} */
+    this.isSharing = false;
     /** @type {((action: string, payload?: any) => void) | null} */
     this.onAction = null;
 
     this.render();
     this.bindEvents();
 
-    // 言語切り替え時にリザルト画面の全テキストを即時更新
+    // 言語切り替え時にリザルト画面の全テキストを即時更新し、画像も再プリレンダリング
     i18n.onLanguageChange(() => {
       this.updateTexts();
+      if (this.modalEl && !this.modalEl.classList.contains('hidden') && this.lastResult) {
+        this.startPreRender();
+      }
+    });
+  }
+
+  /**
+   * リザルトカード画像を先行生成してメモリにキャッシュ (User Gesture 維持 & 待機ゼロ化)
+   */
+  startPreRender() {
+    if (!this.lastResult || !this.lastEvaluation) return;
+    this.preRenderedBlob = null;
+    const height = this.lastResult.heightLimit || this.engine.getState().heightLimit;
+    const diffLevel = this.lastResult.difficultyLevel || this.engine.getState().difficultyLevel || 5;
+    const salt = this.lastResult.salt || this.engine.getCurrentSalt();
+    const shareUrl = `${window.location.origin}${window.location.pathname}?salt=${encodeURIComponent(salt)}`;
+
+    this.renderPromise = generateResultCardBlob({
+      result: this.lastResult,
+      evalResult: this.lastEvaluation,
+      lanes: this.engine.getState().lanes,
+      difficultyLevel: diffLevel,
+      heightLimit: height,
+      isNewRecord: Boolean(this.lastSaveRes?.isNewRecord),
+      shareUrl
+    }).then((blob) => {
+      this.preRenderedBlob = blob;
+      return blob;
+    }).catch((err) => {
+      console.warn('[PreRender] Failed to generate card blob:', err);
+      return null;
     });
   }
 
@@ -202,6 +276,13 @@ export class GameClearModal {
             <button id="modal-copy-btn" class="btn btn-sm btn-secondary">${t('result.copyBtn')}</button>
           </div>
 
+          <div class="modal-actions modal-actions-share">
+            <button id="modal-share-btn" class="btn btn-share btn-block">
+              <span class="btn-share-icon">📸</span>
+              <span id="modal-share-label">${t('result.shareBtn')}</span>
+            </button>
+          </div>
+
           <div class="modal-actions">
             <button id="modal-retry-btn" class="btn btn-outline">${t('result.retryBtn')}</button>
             <button id="modal-next-btn" class="btn btn-primary">${t('result.nextBtn')}</button>
@@ -226,6 +307,8 @@ export class GameClearModal {
     this.movesEl = this.container.querySelector('#result-moves');
     this.diffTitleEl = this.container.querySelector('#result-diff-title');
     this.saltEl = this.container.querySelector('#result-salt');
+    this.shareBtn = this.container.querySelector('#modal-share-btn');
+    this.shareLabel = this.container.querySelector('#modal-share-label');
 
     this.updateTexts();
   }
@@ -267,6 +350,66 @@ export class GameClearModal {
       this.hide();
       this.dispatchAction('next');
     });
+
+    this.shareBtn?.addEventListener('click', async () => {
+      if (!this.lastResult || !this.lastEvaluation || !this.shareBtn || !this.shareLabel) return;
+      if (this.isSharing) return; // 連打抑制: 共有処理中の重複実行を防止
+
+      this.isSharing = true;
+      this.shareBtn.setAttribute('disabled', 'true');
+      this.shareBtn.classList.add('btn-disabled');
+
+      try {
+        // 1. プリレンダリング済みのBlobを取得 (まだ完了していなければ待機)
+        let blob = this.preRenderedBlob;
+        if (!blob && this.renderPromise) {
+          const originalText = this.shareLabel.textContent;
+          this.shareLabel.textContent = t('result.sharing');
+          blob = await this.renderPromise;
+          if (this.shareLabel) this.shareLabel.textContent = originalText;
+        }
+
+        if (!blob) {
+          // キャッシュがない場合のフォールバック再生成
+          this.startPreRender();
+          blob = await this.renderPromise;
+        }
+
+        if (!blob) throw new Error('Blob generation failed');
+
+        const height = this.lastResult.heightLimit || this.engine.getState().heightLimit;
+        const diffLevel = this.lastResult.difficultyLevel || this.engine.getState().difficultyLevel || 5;
+        const salt = this.lastResult.salt || this.engine.getCurrentSalt();
+        const shareUrl = `${window.location.origin}${window.location.pathname}?salt=${encodeURIComponent(salt)}`;
+        const diffTitle = `Lv ${diffLevel}`;
+        const tweetText = t('result.shareTweetText', {
+          diff: diffTitle,
+          rank: `${this.lastEvaluation.rank} ★${this.lastEvaluation.stars}`,
+          time: GameTimer.formatTime(this.lastResult.elapsedTime),
+          moves: this.lastResult.moveCount,
+          score: this.lastEvaluation.score.toLocaleString()
+        });
+
+        // 2. 最適共有の実行 (PCでは確実に𝕏のWeb Intentを開く)
+        await executeShare({
+          blob,
+          filename: `4lane-block-clear-${salt}.png`,
+          title: `4Lane Block [${diffTitle}] Clear!`,
+          text: tweetText,
+          url: shareUrl,
+          showToast
+        });
+      } catch (err) {
+        console.error('Share execution failed:', err);
+      } finally {
+        // 共有ダイアログを閉じた後も1.2秒のクールダウンを設けて連打を抑制
+        setTimeout(() => {
+          this.isSharing = false;
+          this.shareBtn?.removeAttribute('disabled');
+          this.shareBtn?.classList.remove('btn-disabled');
+        }, 1200);
+      }
+    });
   }
 
   /**
@@ -278,6 +421,8 @@ export class GameClearModal {
     // 静的ラベル群の更新
     const scoreLabel = this.modalEl.querySelector('#result-score-label');
     if (scoreLabel) scoreLabel.textContent = t('result.totalScore');
+
+    if (this.shareLabel) this.shareLabel.textContent = t('result.shareBtn');
 
     const bestLabel = this.modalEl.querySelector('#result-best-label');
     if (bestLabel) bestLabel.textContent = t('result.highScore');
@@ -359,10 +504,15 @@ export class GameClearModal {
 
     // ハイスコア判定と Cookie 永続化 (段数×難易度の組み合わせ保存)
     const saveRes = checkAndSaveHighScore(height, diffLevel, evaluation.score, result.moveCount, result.elapsedTime);
+    this.lastEvaluation = evaluation;
+    this.lastSaveRes = saveRes;
     const bestScore = saveRes.isNewRecord ? evaluation.score : saveRes.previousBest;
     if (this.highScoreEl) {
       this.highScoreEl.textContent = bestScore.toLocaleString();
     }
+
+    // バックグラウンドでリザルトカードのプリレンダリングを先行開始 (User Gesture維持)
+    this.startPreRender();
 
     // 紙吹雪発射！ (高速版)
     this.confetti.fire(85, evaluation.rank === 'S');
@@ -804,6 +954,12 @@ export class RTAClearModal {
     this.confetti = new ConfettiCannon();
     /** @type {any} */
     this.lastData = null;
+    /** @type {Blob | null} */
+    this.preRenderedBlob = null;
+    /** @type {Promise<Blob | null> | null} */
+    this.renderPromise = null;
+    /** @type {boolean} */
+    this.isSharing = false;
     /** @type {((action: string, payload?: any) => void) | null} */
     this.onAction = null;
     /** @type {HTMLElement | null} */
@@ -815,7 +971,30 @@ export class RTAClearModal {
     i18n.onLanguageChange(() => {
       if (this.modalEl && !this.modalEl.classList.contains('hidden') && this.lastData) {
         this.updateContent();
+        this.startPreRender();
       }
+    });
+  }
+
+  /**
+   * RTAリザルト画像を先行生成してメモリにキャッシュ (User Gesture 維持 & 待機ゼロ化)
+   */
+  startPreRender() {
+    if (!this.lastData) return;
+    this.preRenderedBlob = null;
+    const { runState, result } = this.lastData;
+    const shareUrl = `${window.location.origin}${window.location.pathname}?rta=1&salt=${encodeURIComponent(runState.initialSalt || '')}`;
+
+    this.renderPromise = generateRTAResultCardBlob({
+      runState,
+      result,
+      shareUrl
+    }).then((blob) => {
+      this.preRenderedBlob = blob;
+      return blob;
+    }).catch((err) => {
+      console.warn('[PreRender RTA] Failed to generate card blob:', err);
+      return null;
     });
   }
 
@@ -841,7 +1020,7 @@ export class RTAClearModal {
       this.show(data);
     });
 
-    this.modalEl?.addEventListener('click', (e) => {
+    this.modalEl?.addEventListener('click', async (e) => {
       const target = /** @type {HTMLElement} */ (e.target);
       if (target.id === 'rta-clear-retry-btn' || target.closest('#rta-clear-retry-btn')) {
         this.hide();
@@ -852,6 +1031,63 @@ export class RTAClearModal {
       } else if (target.id === 'rta-clear-exit-btn' || target.closest('#rta-clear-exit-btn')) {
         this.hide();
         this.dispatchAction('exitRTA');
+      } else if (target.id === 'rta-clear-share-btn' || target.closest('#rta-clear-share-btn')) {
+        const btn = /** @type {HTMLButtonElement} */ (target.id === 'rta-clear-share-btn' ? target : target.closest('#rta-clear-share-btn'));
+        const labelEl = btn.querySelector('#rta-share-label');
+        if (!this.lastData || !btn || !labelEl) return;
+        if (this.isSharing) return; // 連打抑制
+
+        this.isSharing = true;
+        btn.setAttribute('disabled', 'true');
+        btn.classList.add('btn-disabled');
+
+        try {
+          // プリレンダリング済みBlobを取得 (完了していなければ待機)
+          let blob = this.preRenderedBlob;
+          if (!blob && this.renderPromise) {
+            const originalText = labelEl.textContent;
+            labelEl.textContent = t('result.sharing');
+            blob = await this.renderPromise;
+            if (labelEl) labelEl.textContent = originalText;
+          }
+
+          if (!blob) {
+            this.startPreRender();
+            blob = await this.renderPromise;
+          }
+
+          if (!blob) throw new Error('RTA Blob generation failed');
+
+          const { runState } = this.lastData;
+          const shareUrl = `${window.location.origin}${window.location.pathname}?rta=1&salt=${encodeURIComponent(runState.initialSalt || '')}`;
+          const modeName = runState.mode === 'marathon'
+            ? `${t('rta.marathonShort')} (Lv10)`
+            : `${t('rta.countupShort')} (${t('hud.tiers', { n: runState.baseHeight })})`;
+
+          const tweetText = t('result.shareRtaTweetText', {
+            mode: modeName,
+            time: GameTimer.formatTime(runState.totalElapsedMs),
+            moves: runState.totalMoves,
+            score: runState.totalScore.toLocaleString()
+          });
+
+          await executeShare({
+            blob,
+            filename: `4lane-block-rta-${runState.mode}-${Date.now()}.png`,
+            title: `4Lane Block RTA [${modeName}] Completed!`,
+            text: tweetText,
+            url: shareUrl,
+            showToast
+          });
+        } catch (err) {
+          console.error('RTA Share failed:', err);
+        } finally {
+          setTimeout(() => {
+            this.isSharing = false;
+            btn.removeAttribute('disabled');
+            btn.classList.remove('btn-disabled');
+          }, 1200);
+        }
       }
     });
   }
@@ -862,6 +1098,7 @@ export class RTAClearModal {
   show(data) {
     this.lastData = data;
     this.updateContent();
+    this.startPreRender(); // 先行プリレンダリング開始
     this.modalEl?.classList.remove('hidden');
     this.confetti.fire(120, true);
   }
@@ -924,9 +1161,10 @@ export class RTAClearModal {
           }
         }
 
+        const stageDisplayName = runState.mode === 'marathon' ? t('hud.tiers', { n: sp.stageParam || (3 + idx) }) : `Lv ${sp.stageParam || (1 + idx)}`;
         splitsRowsHtml += `
           <tr>
-            <td>${sp.stageName}</td>
+            <td>${stageDisplayName}</td>
             <td><strong>${GameTimer.formatTime(sp.lapTimeMs)}</strong></td>
             ${compareLapTd}
             ${diffTd}
@@ -942,21 +1180,21 @@ export class RTAClearModal {
       ? `
         <tr>
           <th>${t('rta.colStage')}</th>
-          <th>LAP</th>
+          <th>${t('rta.splitsLap')}</th>
           <th>${t('rtaResult.compareLapHeader')}</th>
           <th>${t('rtaResult.compareDiffHeader')}</th>
-          <th>TOTAL</th>
+          <th>${t('rta.splitsTotal')}</th>
           <th>${t('hud.moves')}</th>
-          <th>SCORE</th>
+          <th>${t('rta.splitsScore')}</th>
         </tr>
       `
       : `
         <tr>
           <th>${t('rta.colStage')}</th>
-          <th>LAP</th>
-          <th>TOTAL</th>
+          <th>${t('rta.splitsLap')}</th>
+          <th>${t('rta.splitsTotal')}</th>
           <th>${t('hud.moves')}</th>
-          <th>SCORE</th>
+          <th>${t('rta.splitsScore')}</th>
         </tr>
       `;
 
@@ -993,6 +1231,13 @@ export class RTAClearModal {
               ${splitsRowsHtml}
             </tbody>
           </table>
+        </div>
+
+        <div class="rta-clear-actions rta-clear-share-action">
+          <button id="rta-clear-share-btn" class="btn btn-share btn-block">
+            <span class="btn-share-icon">📸</span>
+            <span id="rta-share-label">${t('result.shareBtnRTA')}</span>
+          </button>
         </div>
 
         <div class="rta-clear-actions">
