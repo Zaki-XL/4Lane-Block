@@ -1,7 +1,7 @@
 // @ts-check
-import { GameEngine } from '../core/game_engine.js?v=3.9';
-import { generateRandomSalt } from '../core/prng.js?v=3.9';
-import { resetAllHighScores, resetAllRTARecords } from '../core/storage.js?v=3.9';
+import { GameEngine } from '../core/game_engine.js';
+import { generateRandomSalt } from '../core/prng.js';
+import { resetAllHighScores, resetAllRTARecords } from '../core/storage.js';
 
 /**
  * モーダル画面（設定・リザルト・スコア一覧）からのユーザー操作を

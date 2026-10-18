@@ -1296,6 +1296,96 @@ body {
   justify-content: center;
 }
 
+.modal-actions.modal-actions-share {
+  margin-bottom: 8px;
+  width: 100%;
+}
+
+.btn-share {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 50%, #075985 100%);
+  color: #ffffff;
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  letter-spacing: 0.3px;
+}
+
+.btn-share:hover:not(:disabled) {
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 50%, #0369a1 100%);
+  border-color: #38bdf8;
+  box-shadow: 0 6px 20px rgba(14, 165, 233, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+.btn-share:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.4);
+}
+
+.btn-share:disabled,
+.btn-share.btn-disabled {
+  opacity: 0.65;
+  cursor: wait;
+  filter: grayscale(0.2);
+  pointer-events: none;
+}
+
+.btn-share-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.btn-block {
+  width: 100%;
+}
+
+.rta-clear-share-action {
+  margin-top: 10px;
+  margin-bottom: 8px;
+  width: 100%;
+}
+
+/* 画面下部共有トースト通知 */
+.share-toast {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translate(-50%, 20px);
+  background: rgba(15, 23, 42, 0.95);
+  color: #f8fafc;
+  border: 1px solid rgba(56, 189, 248, 0.5);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 15px rgba(56, 189, 248, 0.25);
+  padding: 10px 20px;
+  border-radius: 24px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  z-index: 10000;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  max-width: 90vw;
+  text-align: center;
+  backdrop-filter: blur(8px);
+}
+
+.share-toast.visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.share-toast.fade-out {
+  opacity: 0;
+  transform: translate(-50%, -8px);
+}
+
 /* スマホ縦画面向け (幅480px以下): HUDの2行レイアウト最適化 */
 @media (max-width: 480px) {
   .hud-container {
@@ -2212,5 +2302,221 @@ body {
   font-weight: 700;
 }
 
+/* ==========================================================================
+   SNSシェア「Xに遷移します」アナウンスモーダル
+   ========================================================================== */
+.share-notice-backdrop {
+  z-index: 10005; /* クリアモーダルよりも前面に表示 */
+}
 
+.share-notice-card {
+  max-width: 440px;
+  width: 92%;
+  padding: 22px 20px;
+  background: linear-gradient(145deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.95));
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), 0 0 24px rgba(56, 189, 248, 0.2);
+  border-radius: 16px;
+  animation: popIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
 
+.share-notice-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  position: relative;
+}
+
+.share-notice-icon-wrapper {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: #000000;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.share-notice-brand-icon {
+  font-size: 1.2rem;
+  font-weight: 900;
+  color: #ffffff;
+  line-height: 1;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.share-notice-header-text {
+  flex: 1;
+}
+
+.share-notice-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #f8fafc;
+  margin: 0;
+  letter-spacing: 0.2px;
+}
+
+/* ステータスバッジ */
+.share-notice-status {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  margin-bottom: 16px;
+  text-align: left;
+}
+
+.share-notice-status.status-success {
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(52, 211, 153, 0.4);
+}
+
+.share-notice-status.status-warn {
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(251, 191, 36, 0.4);
+}
+
+.share-notice-status .status-icon {
+  font-size: 1.15rem;
+  line-height: 1.3;
+}
+
+.status-text-group {
+  flex: 1;
+}
+
+.status-title {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #f8fafc;
+  margin-bottom: 3px;
+}
+
+.status-desc {
+  font-size: 0.8rem;
+  color: #cbd5e1;
+  line-height: 1.45;
+}
+
+/* 2ステップ・ビジュアルガイド */
+.share-steps-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.share-step-card {
+  flex: 1;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 10px 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+
+.share-step-card.step-completed {
+  border-color: rgba(52, 211, 153, 0.4);
+  background: rgba(6, 78, 59, 0.2);
+}
+
+.share-step-card.step-action {
+  border-color: rgba(56, 189, 248, 0.35);
+  background: rgba(8, 47, 73, 0.25);
+}
+
+.step-num-badge {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  color: #f8fafc;
+  font-size: 0.75rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.share-step-card.step-completed .step-num-badge {
+  background: #10b981;
+  color: #ffffff;
+}
+
+.share-step-card.step-action .step-num-badge {
+  background: #0284c7;
+  color: #ffffff;
+}
+
+.step-content {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+}
+
+.step-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #f1f5f9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.step-sub {
+  font-size: 0.68rem;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.step-check {
+  font-weight: 900;
+  color: #34d399;
+  font-size: 0.85rem;
+}
+
+.share-step-arrow {
+  color: #64748b;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+/* アクションボタン群 */
+.share-notice-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.share-notice-sub-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.share-notice-sub-actions .btn {
+  flex: 1;
+}
+
+@media (max-width: 480px) {
+  .share-steps-container {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .share-step-arrow {
+    display: none;
+  }
+}

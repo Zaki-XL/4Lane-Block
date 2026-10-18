@@ -1,5 +1,5 @@
 // @ts-check
-import { GameEngine } from '../core/game_engine.js?v=3.7';
+import { GameEngine } from '../core/game_engine.js';
 
 /**
  * キーボード操作コントローラー

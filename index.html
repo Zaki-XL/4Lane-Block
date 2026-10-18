@@ -7,8 +7,14 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>4Lane Block - 4レーン・ブロックソートパズル</title>
-  <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="./src/style.css?v=3.9">
+  <link id="app-stylesheet" rel="stylesheet" href="./src/style.css">
+  <script type="module">
+    import { APP_VERSION } from './src/version.js';
+    const linkEl = document.getElementById('app-stylesheet');
+    if (linkEl) {
+      linkEl.href = `./src/style.css?v=${APP_VERSION}`;
+    }
+  </script>
 </head>
 <body>
   <div class="app-container">
@@ -49,7 +55,10 @@
   <!-- クリアモーダル表示コンテナ -->
   <div id="modal-container"></div>
 
-  <!-- ES Modules メインスクリプト -->
-  <script type="module" src="./src/main.js?v=3.9"></script>
+  <!-- ES Modules メインスクリプト起動 (同一のバージョン変数を適用) -->
+  <script type="module">
+    import { APP_VERSION } from './src/version.js';
+    import(`./src/main.js?v=${APP_VERSION}`);
+  </script>
 </body>
 </html>

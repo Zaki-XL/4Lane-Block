@@ -9,29 +9,70 @@ const HIGHSCORES_KEY = '4lane_highscores';
 const LANG_KEY = '4lane_language';
 const ONE_YEAR_SEC = 31536000;
 
+// Node.js テスト環境またはCookie/LocalStorage非対応環境用のインメモリフォールバック
+const inMemoryCache = new Map();
+
 /**
- * Cookie から値を取得
+ * Cookie から値を取得 (シークレットモード保護付き)
  * @param {string} name
  * @returns {string | null}
  */
 function getCookie(name) {
-  if (typeof document === 'undefined') return null;
-  const match = document.cookie.match(new RegExp('(^|;\\s*)' + encodeURIComponent(name) + '=([^;]*)'));
-  return match ? decodeURIComponent(match[2]) : null;
+  try {
+    if (typeof document === 'undefined') return null;
+    const cookieStr = document.cookie;
+    if (!cookieStr) return null;
+    const match = cookieStr.match(new RegExp('(^|;\\s*)' + encodeURIComponent(name) + '=([^;]*)'));
+    return match ? decodeURIComponent(match[2]) : null;
+  } catch (err) {
+    return null;
+  }
 }
 
 /**
- * Cookie に値を保存 (有効期限1年)
+ * Cookie に値を保存 (シークレットモード保護付き)
  * @param {string} name
  * @param {string} value
  */
 function setCookie(name, value) {
-  if (typeof document === 'undefined') return;
-  document.cookie = `${encodeURIComponent(name)}=${encodeURIComponent(value)}; max-age=${ONE_YEAR_SEC}; path=/; SameSite=Lax`;
+  try {
+    if (typeof document === 'undefined') return;
+    document.cookie = `${encodeURIComponent(name)}=${encodeURIComponent(value)}; max-age=${ONE_YEAR_SEC}; path=/; SameSite=Lax`;
+  } catch (err) {
+    // シークレットモードでの書き込み例外を安全に無視
+  }
 }
 
-// Node.js テスト環境またはCookie/LocalStorage非対応環境用のインメモリフォールバック
-const inMemoryCache = new Map();
+/**
+ * LocalStorage から安全に値を取得 (SecurityError保護)
+ * @param {string} key
+ * @returns {string | null}
+ */
+function safeGetLocalStorage(key) {
+  try {
+    if (typeof window !== 'undefined' && 'localStorage' in window && window.localStorage) {
+      return window.localStorage.getItem(key);
+    }
+  } catch (err) {
+    // SecurityError を安全に捕捉
+  }
+  return null;
+}
+
+/**
+ * LocalStorage へ安全に値を保存 (SecurityError保護)
+ * @param {string} key
+ * @param {string} value
+ */
+function safeSetLocalStorage(key, value) {
+  try {
+    if (typeof window !== 'undefined' && 'localStorage' in window && window.localStorage) {
+      window.localStorage.setItem(key, value);
+    }
+  } catch (err) {
+    // SecurityError を安全に捕捉
+  }
+}
 
 /**
  * ストレージからJSONデータを読み出す (Cookie優先、LocalStorageフォールバック、インメモリ)
@@ -46,10 +87,9 @@ function loadData(key) {
       return JSON.parse(cookieVal);
     }
     // 2. LocalStorage フォールバック (file:/// や Cookie 無効時)
-    if (typeof localStorage !== 'undefined') {
-      const lsVal = localStorage.getItem(key);
-      if (lsVal) return JSON.parse(lsVal);
-    }
+    const lsVal = safeGetLocalStorage(key);
+    if (lsVal) return JSON.parse(lsVal);
+
     // 3. インメモリキャッシュ
     if (inMemoryCache.has(key)) {
       return inMemoryCache.get(key);
@@ -69,9 +109,7 @@ function saveData(key, data) {
   try {
     const jsonStr = JSON.stringify(data);
     setCookie(key, jsonStr);
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem(key, jsonStr);
-    }
+    safeSetLocalStorage(key, jsonStr);
     inMemoryCache.set(key, JSON.parse(jsonStr));
   } catch (err) {
     console.warn(`[Storage] Failed to save ${key}:`, err);
@@ -109,13 +147,15 @@ export function saveSettings(settings) {
  * @returns {string | null}
  */
 export function getSavedLanguage() {
-  const cookieVal = getCookie(LANG_KEY);
-  if (cookieVal) return cookieVal;
-  if (typeof localStorage !== 'undefined') {
-    const lsVal = localStorage.getItem(LANG_KEY);
+  try {
+    const cookieVal = getCookie(LANG_KEY);
+    if (cookieVal) return cookieVal;
+    const lsVal = safeGetLocalStorage(LANG_KEY);
     if (lsVal) return lsVal;
+    return inMemoryCache.get(LANG_KEY) || null;
+  } catch (err) {
+    return null;
   }
-  return inMemoryCache.get(LANG_KEY) || null;
 }
 
 /**
@@ -123,11 +163,13 @@ export function getSavedLanguage() {
  * @param {string} lang
  */
 export function saveLanguage(lang) {
-  setCookie(LANG_KEY, lang);
-  if (typeof localStorage !== 'undefined') {
-    localStorage.setItem(LANG_KEY, lang);
+  try {
+    setCookie(LANG_KEY, lang);
+    safeSetLocalStorage(LANG_KEY, lang);
+    inMemoryCache.set(LANG_KEY, lang);
+  } catch (err) {
+    // 安全に無視
   }
-  inMemoryCache.set(LANG_KEY, lang);
 }
 
 /**
